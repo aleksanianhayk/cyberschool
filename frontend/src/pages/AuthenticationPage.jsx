@@ -40,18 +40,14 @@ const LoginForm = () => {
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
-    const handleLoginSuccess = (user) => {
+      const handleLoginSuccess = (user) => {
         login(user);
         
-        // If the user was trying to access the admin page, send them there
-        if (user.role === 'admin' && location.state?.from?.pathname?.startsWith('/admin')) {
+        // If the user's role is 'admin', always send them to the admin page.
+        if (user.role === 'admin') {
             navigate('/admin');
         } 
-        // If they are an admin, send them to the admin page by default
-        else if (user.role === 'admin') {
-            navigate('/admin');
-        } 
-        // Otherwise, send them to the learn page
+        // For any other role, always send them to the learn page.
         else {
             navigate('/learn');
         }
