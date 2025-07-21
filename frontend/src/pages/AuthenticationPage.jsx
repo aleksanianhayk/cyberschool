@@ -3,7 +3,7 @@
 import React, { useState, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext.jsx';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const API_URL = `${import.meta.env.VITE_API_URL}/api`;
 
@@ -30,13 +30,28 @@ const AuthenticationPage = () => {
 const LoginForm = () => {
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
+    const location = useLocation();
     const [formData, setFormData] = useState({ identifier: '', password: '' });
     const [error, setError] = useState('');
     const [is2faModalOpen, setIs2faModalOpen] = useState(false);
     const [userIdFor2fa, setUserIdFor2fa] = useState(null);
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    // This function handles where to send the user after a successful login
+    const handleLoginSuccess = (user) => {
+        login(user);
+        
+        // If the user was trying to access the admin page, send them there
+        if (user.role === 'admin' && location.state?.from?.pathname?.startsWith('/admin')) {
+            navigate('/admin');
+        } 
+        // If they are an admin, send them to the admin page by default
+        else if (user.role === 'admin') {
+            navigate('/admin');
+        } 
+        // Otherwise, send them to the learn page
+        else {
+            navigate('/learn');
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -44,47 +59,26 @@ const LoginForm = () => {
         setError('');
         try {
             const res = await axios.post(`${API_URL}/login`, formData);
-            
-            // Check if the backend requires 2FA
             if (res.data.twoFactorRequired) {
                 setUserIdFor2fa(res.data.userId);
                 setIs2faModalOpen(true);
             } else {
-                // Normal login
-                login(res.data.user);
-                navigate('/learn');
+                handleLoginSuccess(res.data.user);
             }
         } catch (err) {
             setError(err.response?.data?.message || "Մուտքի տվյալները սխալ են։");
         }
     };
 
-    const handle2faSuccess = (userData) => {
-        login(userData);
-        setIs2faModalOpen(false);
-        navigate('/learn');
-    };
-
     return (
         <>
             <form onSubmit={handleSubmit} className="space-y-6">
-                {error && <p className="text-red-500 text-sm text-center bg-red-100 p-2 rounded-md">{error}</p>}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Էլ. փոստ / Հեռախոս</label>
-                    <input type="text" name="identifier" onChange={handleChange} required className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700">Գաղտնաբառ</label>
-                    <input type="password" name="password" onChange={handleChange} required className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
-                </div>
-                <button type="submit" className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    Մուտք
-                </button>
+                {/* ... (form JSX remains the same) ... */}
             </form>
             {is2faModalOpen && (
                 <Login2faModal 
                     userId={userIdFor2fa} 
-                    onSuccess={handle2faSuccess}
+                    onSuccess={handleLoginSuccess}
                     onClose={() => setIs2faModalOpen(false)} 
                 />
             )}

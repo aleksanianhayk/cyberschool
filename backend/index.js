@@ -706,8 +706,52 @@ app.delete("/api/admin/teacher-guide/:id", async (req, res) => {
     }
 });
 
+
+// ===================================================================
+// === MIDDLEWARE for Admin Protection ===============================
+// ===================================================================
+const isAdmin = async (req, res, next) => {
+    // In a real-world app with JWT, you'd verify the token here.
+    // For now, we'll check the user ID sent in the request body.
+    const { adminUserId } = req.body; // We'll expect the frontend to send the admin's ID
+    if (!adminUserId) {
+        return res.status(401).json({ message: "Authentication required." });
+    }
+    try {
+        const [userRows] = await db.query("SELECT role FROM users WHERE id = ?", [adminUserId]);
+        if (userRows.length === 0 || userRows[0].role !== 'admin') {
+            return res.status(403).json({ message: "Access denied. Admin privileges required." });
+        }
+        next(); // User is an admin, proceed.
+    } catch (error) {
+        res.status(500).json({ message: "Server error during authorization." });
+    }
+};
+
+// === NEW ENDPOINT to update a user's role (protected by isAdmin middleware) ===
+app.put("/api/admin/users/:id/role", isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { role } = req.body;
+
+        if (!role) {
+            return res.status(400).json({ message: "Role is required." });
+        }
+
+        await db.query("UPDATE users SET role = ? WHERE id = ?", [role, id]);
+        res.status(200).json({ message: "User role updated successfully." });
+    } catch (error) {
+        console.error("Error updating user role:", error);
+        res.status(500).json({ message: "Failed to update user role." });
+    }
+});
+
+
+
 // --- Start Server ---
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+
