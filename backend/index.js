@@ -10,27 +10,33 @@ const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 
 dotenv.config();
-
 const app = express();
 
-app.use(cors({ origin: process.env.CORS_ORIGIN }));
+// --- CORS Configuration ---
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
-
 const corsOptions = {
     origin: (origin, callback) => {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-
-        // If the incoming origin is in our list, allow it.
-        if (allowedOrigins.indexOf(origin) !== -1) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            callback(new Error(msg), false);
+            callback(new Error('Not allowed by CORS'));
         }
     }
 };
+app.use(cors(corsOptions));
 app.use(express.json());
+
+
+// === NEW DEBUGGING CODE ===========================================
+console.log("--- DATABASE CREDENTIALS ---");
+console.log("DB_HOST:", process.env.DB_HOST);
+console.log("DB_USER:", process.env.DB_USER);
+console.log("DB_PASSWORD:", process.env.DB_PASSWORD ? "Exists" : "MISSING!");
+console.log("DB_NAME:", process.env.DB_NAME);
+console.log("DB_PORT:", process.env.DB_PORT);
+console.log("----------------------------");
+// ==================================================================
+
 
 // --- Database Connection ---
 const db = mysql.createPool({
@@ -38,6 +44,7 @@ const db = mysql.createPool({
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
+    port: process.env.DB_PORT, // Ensure this is included
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
