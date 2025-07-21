@@ -1,11 +1,10 @@
 // /frontend/src/pages/AuthenticationPage.jsx
 
 import React, { useState, useContext } from "react";
-import axios from "axios";
+import api from '../api/api.js'; // Use the new secure api utility
 import { AuthContext } from "../context/AuthContext.jsx";
 import { useNavigate, useLocation } from "react-router-dom";
-
-const API_URL = `${import.meta.env.VITE_API_URL}/api`;
+import { jwtDecode } from 'jwt-decode'; // Import the decoder
 
 const AuthenticationPage = () => {
   const [activeTab, setActiveTab] = useState("login");
@@ -40,7 +39,6 @@ const AuthenticationPage = () => {
   );
 };
 
-// === UPDATED Login Form Component ===
 const LoginForm = () => {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -53,8 +51,11 @@ const LoginForm = () => {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-  const handleLoginSuccess = (user) => {
-    login(user);
+
+  // This function now accepts a token
+  const handleLoginSuccess = (token) => {
+    const user = jwtDecode(token); // Decode the token to get user info
+    login(token); // Pass the raw token to the context for storage
 
     if (user.role === "admin" || user.role === "superadmin") {
       navigate("/admin");
@@ -67,22 +68,18 @@ const LoginForm = () => {
     e.preventDefault();
     setError("");
     try {
-      const res = await axios.post(`${API_URL}/login`, formData);
+      // Use the 'api' utility instead of axios
+      const res = await api.post(`/login`, formData);
       if (res.data.twoFactorRequired) {
         setUserIdFor2fa(res.data.userId);
         setIs2faModalOpen(true);
       } else {
-        handleLoginSuccess(res.data.user);
+        // On success, the backend sends a token
+        handleLoginSuccess(res.data.token);
       }
     } catch (err) {
       setError(err.response?.data?.message || "Մուտքի տվյալները սխալ են։");
     }
-  };
-
-  const handle2faSuccess = (userData) => {
-    login(userData);
-    setIs2faModalOpen(false);
-    navigate("/learn");
   };
 
   return (
@@ -127,7 +124,7 @@ const LoginForm = () => {
       {is2faModalOpen && (
         <Login2faModal
           userId={userIdFor2fa}
-          onSuccess={handle2faSuccess}
+          onSuccess={handleLoginSuccess} // Pass the same success handler
           onClose={() => setIs2faModalOpen(false)}
         />
       )}
@@ -135,7 +132,6 @@ const LoginForm = () => {
   );
 };
 
-// --- NEW 2FA Modal for Login ---
 const Login2faModal = ({ userId, onSuccess, onClose }) => {
   const [token, setToken] = useState("");
   const [error, setError] = useState("");
@@ -144,11 +140,13 @@ const Login2faModal = ({ userId, onSuccess, onClose }) => {
     e.preventDefault();
     setError("");
     try {
-      const res = await axios.post(`${API_URL}/login/2fa/verify`, {
+      // Use the 'api' utility instead of axios
+      const res = await api.post(`/login/2fa/verify`, {
         userId,
         token,
       });
-      onSuccess(res.data.user); // Pass the full user object up
+      // On success, the backend sends a new token
+      onSuccess(res.data.token);
     } catch (err) {
       setError(err.response?.data?.message || "Verification failed.");
     }
@@ -192,7 +190,6 @@ const Login2faModal = ({ userId, onSuccess, onClose }) => {
   );
 };
 
-// --- Register Form Component (UPDATED) ---
 const RegisterForm = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -202,7 +199,7 @@ const RegisterForm = () => {
     gender: "male",
     school_name: "",
     role: "student",
-    grade: "2", // Default grade
+    grade: "2",
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -223,7 +220,8 @@ const RegisterForm = () => {
     };
 
     try {
-      await axios.post(`${API_URL}/register`, submissionData);
+      // Use the 'api' utility instead of axios
+      await api.post(`/register`, submissionData);
       setSuccess("Գրանցումը հաջողվեց։ Խնդրում ենք մուտք գործել։");
       e.target.reset();
     } catch (err) {
@@ -234,7 +232,6 @@ const RegisterForm = () => {
     }
   };
 
-  // Create an array for grade options from 2 to 12
   const gradeOptions = Array.from({ length: 11 }, (_, i) => i + 2);
 
   return (
@@ -288,9 +285,7 @@ const RegisterForm = () => {
         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
       />
 
-      {/* Gender and Role Selects */}
       <div className="flex flex-col sm:flex-row gap-4">
-        {/* === GENDER DROPDOWN (CHANGED) === */}
         <select
           name="gender"
           onChange={handleChange}
@@ -312,7 +307,6 @@ const RegisterForm = () => {
         </select>
       </div>
 
-      {/* === GRADE DROPDOWN (CHANGED) === */}
       {formData.role === "student" && (
         <div>
           <label className="block text-sm font-medium text-gray-700">

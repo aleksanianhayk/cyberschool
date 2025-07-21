@@ -19,6 +19,7 @@
     "@tiptap/starter-kit": "^3.0.7",
     "axios": "^1.10.0",
     "i18next": "^25.3.2",
+    "jwt-decode": "^4.0.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-i18next": "^15.6.0",

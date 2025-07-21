@@ -1,6 +1,7 @@
 // /frontend/src/context/AuthContext.jsx
 
 import React, { createContext, useState, useEffect } from 'react';
+import { jwtDecode } from 'jwt-decode';
 
 export const AuthContext = createContext(null);
 
@@ -8,39 +9,48 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // On initial load, check if a user session exists in localStorage
     useEffect(() => {
         try {
-            const storedUser = localStorage.getItem('cyberstorm_user');
-            if (storedUser) {
-                setUser(JSON.parse(storedUser));
+            const token = localStorage.getItem('cyberstorm_token');
+            if (token) {
+                const decodedUser = jwtDecode(token);
+                const currentTime = Date.now() / 1000;
+                if (decodedUser.exp < currentTime) {
+                    localStorage.removeItem('cyberstorm_token');
+                } else {
+                    setUser(decodedUser);
+                }
             }
         } catch (error) {
-            console.error("Failed to parse user from localStorage", error);
-            localStorage.removeItem('cyberstorm_user');
+            console.error("Failed to decode token", error);
+            localStorage.removeItem('cyberstorm_token');
         } finally {
-            // Set loading to false once user status is determined
             setLoading(false);
         }
     }, []);
 
-    const login = (userData) => {
-        localStorage.setItem('cyberstorm_user', JSON.stringify(userData));
-        setUser(userData);
+    const login = (token) => {
+        localStorage.setItem('cyberstorm_token', token);
+        const decodedUser = jwtDecode(token);
+        setUser(decodedUser);
     };
 
     const logout = () => {
-        localStorage.removeItem('cyberstorm_user');
+        localStorage.removeItem('cyberstorm_token');
         setUser(null);
     };
 
-    // Display a loading message while we check for a user session
+    // New function to update user state locally
+    const updateUser = (newUserData) => {
+        setUser(prevUser => ({ ...prevUser, ...newUserData }));
+    };
+
     if (loading) {
-        return <div>Բեռնվում է...</div>; // "Loading..." in Armenian
+        return <div>Բեռնվում է...</div>;
     }
 
     return (
-        <AuthContext.Provider value={{ user, login, logout }}>
+        <AuthContext.Provider value={{ user, login, logout, updateUser }}>
             {children}
         </AuthContext.Provider>
     );
