@@ -1,11 +1,17 @@
 // /frontend/src/pages/ProfilePage.jsx
 
 import React, { useState, useContext } from 'react';
-import api from '../api/api.js'; // Use the new secure api utility
+import axios from 'axios';
 import { AuthContext } from '../context/AuthContext.jsx';
 
+const API_URL = `${import.meta.env.VITE_API_URL}/api/users`;
+
 const ProfilePage = () => {
-    const { user, updateUser, logout } = useContext(AuthContext);
+    // === THE FIX IS HERE ===
+    // Ensure 'logout' is correctly destructured from the context.
+    // The error occurs if 'logout' is missing from this line.
+    const { user, login, logout } = useContext(AuthContext);
+    
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [is2faModalOpen, setIs2faModalOpen] = useState(false);
 
@@ -15,14 +21,13 @@ const ProfilePage = () => {
 
     const handle2faStatusChange = async () => {
         if (user.is_two_factor_enabled) {
-            // In a real app, you would use a custom modal here
             if (window.confirm('Վստա՞հ եք, որ ուզում եք անջատել 2FA-ն։')) {
                 try {
-                    await api.post('/users/2fa/disable', { userId: user.id });
-                    updateUser({ is_two_factor_enabled: 0 }); // Update state locally
+                    await axios.post(`${API_URL}/2fa/disable`, { userId: user.id });
+                    login({ ...user, is_two_factor_enabled: 0, two_factor_secret: null });
+                    alert('2FA-ն հաջողությամբ անջատվեց։');
                 } catch (error) {
-                    // Handle error with a custom modal in a real app
-                    console.error('Failed to disable 2FA', error);
+                    alert('2FA-ն անջատել չհաջողվեց։');
                 }
             }
         } else {
@@ -31,7 +36,7 @@ const ProfilePage = () => {
     };
 
     const on2faEnabled = () => {
-        updateUser({ is_two_factor_enabled: 1 }); // Update state locally
+        login({ ...user, is_two_factor_enabled: 1 });
         setIs2faModalOpen(false);
     };
 
@@ -96,7 +101,7 @@ const ChangePasswordModal = ({ user, onClose }) => {
         e.preventDefault();
         setMessage({ text: '', type: '' });
         try {
-            const res = await api.post('/users/change-password', { userId: user.id, oldPassword, newPassword });
+            const res = await axios.post(`${API_URL}/change-password`, { userId: user.id, oldPassword, newPassword });
             setMessage({ text: res.data.message, type: 'success' });
         } catch (error) {
             setMessage({ text: error.response?.data?.message || 'Internal server error', type: 'error' });
@@ -129,7 +134,7 @@ const TwoFactorAuthModal = ({ user, onClose, onEnabled }) => {
 
     const handleGenerate = async () => {
         try {
-            const res = await api.post('/users/2fa/generate', { userId: user.id });
+            const res = await axios.post(`${API_URL}/2fa/generate`, { userId: user.id });
             setQrCodeUrl(res.data.qrCodeUrl);
             setStep(2);
         } catch (error) {
@@ -139,7 +144,7 @@ const TwoFactorAuthModal = ({ user, onClose, onEnabled }) => {
 
     const handleVerify = async () => {
         try {
-            const res = await api.post('/users/2fa/verify', { userId: user.id, token });
+            const res = await axios.post(`${API_URL}/2fa/verify`, { userId: user.id, token });
             setMessage({ text: res.data.message, type: 'success' });
             setTimeout(() => {
                 onEnabled();
