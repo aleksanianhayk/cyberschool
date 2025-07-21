@@ -36,7 +36,10 @@ const LoginForm = () => {
     const [is2faModalOpen, setIs2faModalOpen] = useState(false);
     const [userIdFor2fa, setUserIdFor2fa] = useState(null);
 
-    // This function handles where to send the user after a successful login
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
     const handleLoginSuccess = (user) => {
         login(user);
         
@@ -54,7 +57,7 @@ const LoginForm = () => {
         }
     };
 
-    const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         try {
@@ -70,15 +73,32 @@ const LoginForm = () => {
         }
     };
 
+    const handle2faSuccess = (userData) => {
+        login(userData);
+        setIs2faModalOpen(false);
+        navigate('/learn');
+    };
+
     return (
         <>
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* ... (form JSX remains the same) ... */}
+                {error && <p className="text-red-500 text-sm text-center bg-red-100 p-2 rounded-md">{error}</p>}
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Էլ. փոստ / Հեռախոս</label>
+                    <input type="text" name="identifier" onChange={handleChange} required className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700">Գաղտնաբառ</label>
+                    <input type="password" name="password" onChange={handleChange} required className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" />
+                </div>
+                <button type="submit" className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Մուտք
+                </button>
             </form>
             {is2faModalOpen && (
                 <Login2faModal 
                     userId={userIdFor2fa} 
-                    onSuccess={handleLoginSuccess}
+                    onSuccess={handle2faSuccess}
                     onClose={() => setIs2faModalOpen(false)} 
                 />
             )}
