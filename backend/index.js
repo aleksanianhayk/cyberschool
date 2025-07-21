@@ -173,6 +173,23 @@ app.post("/api/users/2fa/disable", async (req, res) => {
     }
 });
 
+
+// === THIS IS THE MISSING ENDPOINT THAT IS NOW RESTORED ===
+app.get("/api/progress/:userId/:courseId", async (req, res) => {
+    try {
+        const { userId, courseId } = req.params;
+        const [progressRows] = await db.query(
+            "SELECT highest_page_index FROM user_progress WHERE user_id = ? AND course_id = ?",
+            [userId, courseId]
+        );
+        const highestPageIndex = progressRows.length > 0 ? progressRows[0].highest_page_index : -1;
+        res.status(200).json({ highestPageIndex });
+    } catch (error) {
+        console.error("Error fetching progress:", error);
+        res.status(500).json({ message: "Failed to fetch progress." });
+    }
+});
+
 // ===================================================================
 // === AI CHAT API ===================================================
 // ===================================================================
