@@ -284,14 +284,16 @@ app.get("/api/meetups/:meetupIdString", async (req, res) => {
         if (!isRegistered) delete meetup.join_url;
 
         // === THIS SQL QUERY IS NOW FIXED AND MORE ROBUST ===
-        const [suggestedCourses] = await db.query(`
-            SELECT 
-                c.id, c.title, c.description, c.image_url, c.course_id_string, 
-                (SELECT COUNT(*) FROM pages p WHERE p.course_id = c.id) as page_count
-            FROM meetup_suggested_courses msc
-            JOIN courses c ON msc.course_id = c.id 
-            WHERE msc.meetup_id = ? AND c.is_active = true
-        `, [meetup.id]);
+                const suggestedCourses = [];
+
+        // const [suggestedCourses] = await db.query(`
+        //     SELECT 
+        //         c.id, c.title, c.description, c.image_url, c.course_id_string, 
+        //         (SELECT COUNT(*) FROM pages p WHERE p.course_id = c.id) as page_count
+        //     FROM meetup_suggested_courses msc
+        //     JOIN courses c ON msc.course_id = c.id 
+        //     WHERE msc.meetup_id = ? AND c.is_active = true
+        // `, [meetup.id]);
 
         res.status(200).json({ ...meetup, speakers, comments, isRegistered, suggestedCourses });
     } catch (error) {
@@ -604,11 +606,11 @@ app.post("/api/admin/meetups", async (req, res) => {
             const speakerValues = speakers.map(s => [newMeetupId, s.name, s.title]);
             await connection.query(speakerQuery, [speakerValues]);
         }
-        if (suggestedCourseIds && suggestedCourseIds.length > 0) {
-            const suggestedQuery = "INSERT INTO meetup_suggested_courses (meetup_id, course_id) VALUES ?";
-            const suggestedValues = suggestedCourseIds.map(courseId => [newMeetupId, courseId]);
-            await connection.query(suggestedQuery, [suggestedValues]);
-        }
+        // if (suggestedCourseIds && suggestedCourseIds.length > 0) {
+        //     const suggestedQuery = "INSERT INTO meetup_suggested_courses (meetup_id, course_id) VALUES ?";
+        //     const suggestedValues = suggestedCourseIds.map(courseId => [newMeetupId, courseId]);
+        //     await connection.query(suggestedQuery, [suggestedValues]);
+        // }
         await connection.commit();
         res.status(201).json({ message: "Meetup created successfully!", meetupId: newMeetupId });
     } catch (error) {
@@ -634,12 +636,12 @@ app.put("/api/admin/meetups/:id", async (req, res) => {
             const speakerValues = speakers.map(s => [id, s.name, s.title]);
             await connection.query(speakerQuery, [speakerValues]);
         }
-        await connection.query("DELETE FROM meetup_suggested_courses WHERE meetup_id = ?", [id]);
-        if (suggestedCourseIds && suggestedCourseIds.length > 0) {
-            const suggestedQuery = "INSERT INTO meetup_suggested_courses (meetup_id, course_id) VALUES ?";
-            const suggestedValues = suggestedCourseIds.map(courseId => [id, courseId]);
-            await connection.query(suggestedQuery, [suggestedValues]);
-        }
+        // await connection.query("DELETE FROM meetup_suggested_courses WHERE meetup_id = ?", [id]);
+        // if (suggestedCourseIds && suggestedCourseIds.length > 0) {
+        //     const suggestedQuery = "INSERT INTO meetup_suggested_courses (meetup_id, course_id) VALUES ?";
+        //     const suggestedValues = suggestedCourseIds.map(courseId => [id, courseId]);
+        //     await connection.query(suggestedQuery, [suggestedValues]);
+        // }
         await connection.commit();
         res.status(200).json({ message: "Meetup updated successfully!" });
     } catch (error) {
