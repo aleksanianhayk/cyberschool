@@ -44,6 +44,43 @@ const db = mysql.createPool({
 
 
 // ===================================================================
+// === NEW JWT MIDDLEWARE ============================================
+// ===================================================================
+
+const verifyToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+        return res.sendStatus(401); // Unauthorized
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.sendStatus(403); // Forbidden (invalid token)
+        }
+        req.user = user; // Add the decoded user payload to the request object
+        next();
+    });
+};
+
+const isSuperAdmin = (req, res, next) => {
+    if (req.user && req.user.role === 'superadmin') {
+        next();
+    } else {
+        res.status(403).json({ message: "Access denied. Super Admin privileges required." });
+    }
+};
+
+const isAdminOrSuperAdmin = (req, res, next) => {
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin')) {
+        next();
+    } else {
+        res.status(403).json({ message: "Access denied. Admin privileges required." });
+    }
+};
+
+// ===================================================================
 // === USER AUTHENTICATION & PROFILE APIS ============================
 // ===================================================================
 
@@ -710,42 +747,7 @@ app.delete("/api/admin/teacher-guide/:id", async (req, res) => {
 });
 
 
-// ===================================================================
-// === NEW JWT MIDDLEWARE ============================================
-// ===================================================================
 
-const verifyToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-    if (!token) {
-        return res.sendStatus(401); // Unauthorized
-    }
-
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.sendStatus(403); // Forbidden (invalid token)
-        }
-        req.user = user; // Add the decoded user payload to the request object
-        next();
-    });
-};
-
-const isSuperAdmin = (req, res, next) => {
-    if (req.user && req.user.role === 'superadmin') {
-        next();
-    } else {
-        res.status(403).json({ message: "Access denied. Super Admin privileges required." });
-    }
-};
-
-const isAdminOrSuperAdmin = (req, res, next) => {
-    if (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin')) {
-        next();
-    } else {
-        res.status(403).json({ message: "Access denied. Admin privileges required." });
-    }
-};
 
 // === NEW ENDPOINT to update a user's role (protected by isAdmin middleware) ===
 app.put("/api/admin/users/:id/role", verifyToken, isSuperAdmin, async (req, res) => {
