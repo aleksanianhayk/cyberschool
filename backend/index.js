@@ -68,6 +68,7 @@ const isSuperAdmin = (req, res, next) => {
 
 const isAdminOrSuperAdmin = (req, res, next) => {
     if (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin')) {
+        req.userRole = req.user.role; // Pass role for further checks
         next();
     } else {
         res.status(403).json({ message: "Access denied. Admin privileges required." });
@@ -85,8 +86,8 @@ app.post("/api/register", async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, salt);
         const query = "INSERT INTO users (name, email, password, phone, gender, school_name, role, grade) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         const values = [name, email, hashedPassword, phone, gender, school_name, role, grade];
-        const [result] = await db.query(query, values);
-        res.status(201).json({ message: "User registered successfully!", userId: result.insertId });
+        await db.query(query, values);
+        res.status(201).json({ message: "User registered successfully!" });
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: "Email or phone already exists." });
         res.status(500).json({ message: "Internal server error." });
@@ -193,7 +194,9 @@ app.post("/api/users/2fa/disable", verifyToken, async (req, res) => {
 // === AI CHAT API ===================================================
 // ===================================================================
 app.post("/api/ask-ai", verifyToken, async (req, res) => {
-    // ... (Your existing AI chat logic here, can use req.user)
+    // This is a placeholder for your full AI logic
+    const { prompt } = req.body;
+    res.status(200).json({ response: `This is a placeholder response to your prompt: "${prompt}"` });
 });
 
 // ===================================================================
@@ -217,7 +220,7 @@ app.get("/api/sections-with-courses", async (req, res) => {
     }
 });
 
-app.get("/api/courses/:courseIdString", async (req, res) => {
+app.get("/api/courses/:courseIdString", verifyToken, async (req, res) => {
     try {
         const { courseIdString } = req.params;
         const [courseRows] = await db.query("SELECT * FROM courses WHERE course_id_string = ? AND is_active = true", [courseIdString]);
@@ -301,7 +304,7 @@ app.get("/api/meetups/:meetupIdString", verifyToken, async (req, res) => {
         const isRegistered = regRows.length > 0;
         if (!isRegistered) delete meetup.join_url;
         
-        const suggestedCourses = []; // Temporarily disabled
+        const suggestedCourses = []; // Temporarily disabled to prevent crashes
         res.status(200).json({ ...meetup, speakers, comments, isRegistered, suggestedCourses });
     } catch (error) {
         console.error("Error fetching meetup details:", error);
@@ -332,7 +335,7 @@ app.post("/api/meetups/:meetupId/comments", verifyToken, async (req, res) => {
     }
 });
 
-app.get("/api/teacher-guide", async (req, res) => {
+app.get("/api/teacher-guide", verifyToken, async (req, res) => {
     try {
         const [flatList] = await db.query("SELECT * FROM teacher_guide_content ORDER BY parent_id ASC, order_index ASC");
         const buildTree = (list, parentId = null) => list.filter(item => item.parent_id === parentId).map(item => ({ ...item, children: buildTree(list, item.id) }));
