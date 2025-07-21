@@ -6,11 +6,10 @@ const mysql = require("mysql2");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const bcrypt = require("bcryptjs");
+const jwt = require('jsonwebtoken');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
-const jwt = require('jsonwebtoken');
-
 
 dotenv.config();
 
@@ -44,22 +43,17 @@ const db = mysql.createPool({
 
 
 // ===================================================================
-// === NEW JWT MIDDLEWARE ============================================
+// === SECURITY MIDDLEWARE ===========================================
 // ===================================================================
 
 const verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-    if (!token) {
-        return res.sendStatus(401); // Unauthorized
-    }
+    const token = authHeader && authHeader.split(' ')[1];
+    if (!token) return res.sendStatus(401);
 
     jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.sendStatus(403); // Forbidden (invalid token)
-        }
-        req.user = user; // Add the decoded user payload to the request object
+        if (err) return res.sendStatus(403);
+        req.user = user;
         next();
     });
 };
@@ -94,7 +88,6 @@ app.post("/api/register", async (req, res) => {
         const [result] = await db.query(query, values);
         res.status(201).json({ message: "User registered successfully!", userId: result.insertId });
     } catch (error) {
-        console.error("Registration error:", error);
         if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: "Email or phone already exists." });
         res.status(500).json({ message: "Internal server error." });
     }
@@ -103,19 +96,21 @@ app.post("/api/register", async (req, res) => {
 app.post("/api/login", async (req, res) => {
     try {
         const { identifier, password } = req.body;
-        const query = "SELECT * FROM users WHERE email = ? OR phone = ?";
-        const [results] = await db.query(query, [identifier, identifier]);
+        const [results] = await db.query("SELECT * FROM users WHERE email = ? OR phone = ?", [identifier, identifier]);
         if (results.length === 0) return res.status(404).json({ message: "User not found." });
+        
         const user = results[0];
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ message: "Invalid credentials." });
+
         if (user.is_two_factor_enabled) {
             return res.status(200).json({ twoFactorRequired: true, userId: user.id });
         }
-        const { password: _, ...userData } = user;
-        res.status(200).json({ message: "Login successful!", user: userData });
+
+        const payload = { id: user.id, name: user.name, role: user.role };
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
+        res.status(200).json({ message: "Login successful!", token });
     } catch (error) {
-        console.error("Login error:", error);
         res.status(500).json({ message: "Database error." });
     }
 });
@@ -124,80 +119,72 @@ app.post("/api/login/2fa/verify", async (req, res) => {
     try {
         const { userId, token } = req.body;
         const [userRows] = await db.query("SELECT * FROM users WHERE id = ?", [userId]);
-        if (userRows.length === 0 || !userRows[0].two_factor_secret) {
-            return res.status(400).json({ message: "User not found or 2FA not set up." });
-        }
+        if (userRows.length === 0 || !userRows[0].two_factor_secret) return res.status(400).json({ message: "User not found or 2FA not set up." });
+        
         const user = userRows[0];
         const verified = speakeasy.totp.verify({ secret: user.two_factor_secret, encoding: 'base32', token });
         if (verified) {
-            const { password: _, ...userData } = user;
-            res.status(200).json({ message: "Login successful!", user: userData });
+            const payload = { id: user.id, name: user.name, role: user.role };
+            const jwtToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
+            res.status(200).json({ message: "Login successful!", token: jwtToken });
         } else {
             res.status(401).json({ message: "Invalid 2FA token." });
         }
     } catch (error) {
-        console.error("2FA Login Verify Error:", error);
         res.status(500).json({ message: "Internal server error." });
     }
 });
 
-app.post("/api/users/change-password",verifyToken, async (req, res) => {
+app.post("/api/users/change-password", verifyToken, async (req, res) => {
     try {
-        const { userId, oldPassword, newPassword } = req.body;
-        if (!userId || !oldPassword || !newPassword) return res.status(400).json({ message: "All fields are required." });
-        const [userRows] = await db.query("SELECT * FROM users WHERE id = ?", [userId]);
+        const { oldPassword, newPassword } = req.body;
+        const [userRows] = await db.query("SELECT * FROM users WHERE id = ?", [req.user.id]);
         if (userRows.length === 0) return res.status(404).json({ message: "User not found." });
         const user = userRows[0];
         const isMatch = await bcrypt.compare(oldPassword, user.password);
         if (!isMatch) return res.status(401).json({ message: "Incorrect old password." });
         const salt = await bcrypt.genSalt(10);
         const hashedNewPassword = await bcrypt.hash(newPassword, salt);
-        await db.query("UPDATE users SET password = ? WHERE id = ?", [hashedNewPassword, userId]);
+        await db.query("UPDATE users SET password = ? WHERE id = ?", [hashedNewPassword, req.user.id]);
         res.status(200).json({ message: "Password changed successfully." });
     } catch (error) {
-        console.error("Change password error:", error);
         res.status(500).json({ message: "Internal server error." });
     }
 });
 
-app.post("/api/users/2fa/generate",verifyToken, async (req, res) => {
+app.post("/api/users/2fa/generate", verifyToken, async (req, res) => {
     try {
-        const { userId } = req.body;
-        const secret = speakeasy.generateSecret({ name: `CyberStorm (${userId})` });
-        await db.query("UPDATE users SET two_factor_secret = ? WHERE id = ?", [secret.base32, userId]);
+        const secret = speakeasy.generateSecret({ name: `CyberStorm (${req.user.name})` });
+        await db.query("UPDATE users SET two_factor_secret = ? WHERE id = ?", [secret.base32, req.user.id]);
         const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
         res.json({ secret: secret.base32, qrCodeUrl });
     } catch (error) {
-        console.error("2FA generate error:", error);
         res.status(500).json({ message: "Failed to generate 2FA secret." });
     }
 });
 
 app.post("/api/users/2fa/verify", verifyToken, async (req, res) => {
     try {
-        const { userId, token } = req.body;
-        const [userRows] = await db.query("SELECT two_factor_secret FROM users WHERE id = ?", [userId]);
+        const { token } = req.body;
+        const [userRows] = await db.query("SELECT two_factor_secret FROM users WHERE id = ?", [req.user.id]);
         if (userRows.length === 0 || !userRows[0].two_factor_secret) return res.status(400).json({ message: "2FA secret not found." });
         const verified = speakeasy.totp.verify({ secret: userRows[0].two_factor_secret, encoding: 'base32', token });
         if (verified) {
-            await db.query("UPDATE users SET is_two_factor_enabled = TRUE WHERE id = ?", [userId]);
+            await db.query("UPDATE users SET is_two_factor_enabled = TRUE WHERE id = ?", [req.user.id]);
             res.status(200).json({ message: "2FA enabled successfully!" });
         } else {
             res.status(400).json({ message: "Invalid token." });
         }
     } catch (error) {
-        console.error("2FA verify error:", error);
         res.status(500).json({ message: "Internal server error." });
     }
 });
 
-app.post("/api/users/2fa/disable",verifyToken, async (req, res) => {
+app.post("/api/users/2fa/disable", verifyToken, async (req, res) => {
     try {
-        const { userId } = req.body;
-        await db.query("UPDATE users SET is_two_factor_enabled = FALSE, two_factor_secret = NULL WHERE id = ?", [userId]);
+        await db.query("UPDATE users SET is_two_factor_enabled = FALSE, two_factor_secret = NULL WHERE id = ?", [req.user.id]);
         res.status(200).json({ message: "2FA disabled successfully." });
     } catch (error) {
-        console.error("2FA disable error:", error);
         res.status(500).json({ message: "Failed to disable 2FA." });
     }
 });
@@ -205,17 +192,14 @@ app.post("/api/users/2fa/disable",verifyToken, async (req, res) => {
 // ===================================================================
 // === AI CHAT API ===================================================
 // ===================================================================
-app.post("/api/ask-ai", async (req, res) => {
-    // This is a placeholder for your full AI logic
-    const { prompt, user } = req.body;
-    res.status(200).json({ response: `This is a placeholder response to your prompt: "${prompt}"` });
+app.post("/api/ask-ai", verifyToken, async (req, res) => {
+    // ... (Your existing AI chat logic here, can use req.user)
 });
 
 // ===================================================================
 // === PUBLIC/STUDENT-FACING APIS ====================================
 // ===================================================================
 
-// --- Public Course & Progress APIs ---
 app.get("/api/sections-with-courses", async (req, res) => {
     try {
         const [sections] = await db.query("SELECT * FROM sections ORDER BY order_index ASC, title ASC");
@@ -229,7 +213,6 @@ app.get("/api/sections-with-courses", async (req, res) => {
         const sectionsWithCourses = sections.map(section => ({ ...section, courses: coursesBySection[section.id] || [] })).filter(section => section.courses.length > 0);
         res.status(200).json(sectionsWithCourses);
     } catch (error) {
-        console.error("Error fetching sections with courses:", error);
         res.status(500).json({ message: "Failed to fetch data." });
     }
 });
@@ -238,7 +221,7 @@ app.get("/api/courses/:courseIdString", async (req, res) => {
     try {
         const { courseIdString } = req.params;
         const [courseRows] = await db.query("SELECT * FROM courses WHERE course_id_string = ? AND is_active = true", [courseIdString]);
-        if (courseRows.length === 0) return res.status(404).json({ message: "Course not found or is not active." });
+        if (courseRows.length === 0) return res.status(404).json({ message: "Course not found." });
         const course = courseRows[0];
         const [pages] = await db.query("SELECT * FROM pages WHERE course_id = ? ORDER BY page_number", [course.id]);
         const pagesWithComponents = await Promise.all(pages.map(async (page) => {
@@ -247,12 +230,22 @@ app.get("/api/courses/:courseIdString", async (req, res) => {
         }));
         res.status(200).json({ ...course, pages: pagesWithComponents });
     } catch (error) {
-        console.error(`Error fetching course ${req.params.courseIdString}:`, error);
         res.status(500).json({ message: "Failed to fetch course data." });
     }
 });
 
-app.get("/api/progress/:userId", async (req, res) => {
+app.get("/api/progress/:userId/:courseId", verifyToken, async (req, res) => {
+    try {
+        const { userId, courseId } = req.params;
+        const [progressRows] = await db.query("SELECT highest_page_index FROM user_progress WHERE user_id = ? AND course_id = ?", [userId, courseId]);
+        const highestPageIndex = progressRows.length > 0 ? progressRows[0].highest_page_index : -1;
+        res.status(200).json({ highestPageIndex });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to fetch progress." });
+    }
+});
+
+app.get("/api/progress/:userId", verifyToken, async (req, res) => {
     try {
         const { userId } = req.params;
         const [progressRows] = await db.query("SELECT course_id, highest_page_index FROM user_progress WHERE user_id = ?", [userId]);
@@ -262,35 +255,31 @@ app.get("/api/progress/:userId", async (req, res) => {
         }, {});
         res.status(200).json(progressMap);
     } catch (error) {
-        console.error("Error fetching all progress:", error);
         res.status(500).json({ message: "Failed to fetch progress." });
     }
 });
 
-app.post("/api/progress", async (req, res) => {
+app.post("/api/progress", verifyToken, async (req, res) => {
     try {
-        const { userId, courseId, pageIndex } = req.body;
+        const { courseId, pageIndex } = req.body;
         const query = `INSERT INTO user_progress (user_id, course_id, highest_page_index) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE highest_page_index = GREATEST(highest_page_index, VALUES(highest_page_index))`;
-        await db.query(query, [userId, courseId, pageIndex]);
+        await db.query(query, [req.user.id, courseId, pageIndex]);
         res.status(200).json({ message: "Progress saved." });
     } catch (error) {
-        console.error("Error saving progress:", error);
         res.status(500).json({ message: "Failed to save progress." });
     }
 });
 
-app.delete("/api/progress/:userId/:courseId", async (req, res) => {
+app.delete("/api/progress/:userId/:courseId", verifyToken, async (req, res) => {
     try {
         const { userId, courseId } = req.params;
         await db.query("DELETE FROM user_progress WHERE user_id = ? AND course_id = ?", [userId, courseId]);
         res.status(200).json({ message: "Progress reset successfully." });
     } catch (error) {
-        console.error("Error resetting progress:", error);
         res.status(500).json({ message: "Failed to reset progress." });
     }
 });
 
-// --- Public Meetup APIs ---
 app.get("/api/meetups", async (req, res) => {
     try {
         const [meetups] = await db.query("SELECT * FROM meetups WHERE is_active = true ORDER BY meetup_datetime DESC");
@@ -300,40 +289,19 @@ app.get("/api/meetups", async (req, res) => {
     }
 });
 
-// This is the corrected endpoint for /backend/index.js
-
-// This is the corrected endpoint for /backend/index.js
-
-app.get("/api/meetups/:meetupIdString", async (req, res) => {
+app.get("/api/meetups/:meetupIdString", verifyToken, async (req, res) => {
     try {
         const { meetupIdString } = req.params;
-        const { userId } = req.query;
         const [meetupRows] = await db.query("SELECT * FROM meetups WHERE meetup_id_string = ?", [meetupIdString]);
         if (meetupRows.length === 0) return res.status(404).json({ message: "Meetup not found." });
-        
         const meetup = meetupRows[0];
         const [speakers] = await db.query("SELECT * FROM meetup_speakers WHERE meetup_id = ?", [meetup.id]);
         const [comments] = await db.query("SELECT c.*, u.name as author_name FROM meetup_comments c JOIN users u ON c.user_id = u.id WHERE c.meetup_id = ? ORDER BY c.created_at DESC", [meetup.id]);
-        
-        let isRegistered = false;
-        if (userId) {
-            const [regRows] = await db.query("SELECT id FROM meetup_registrations WHERE user_id = ? AND meetup_id = ?", [userId, meetup.id]);
-            isRegistered = regRows.length > 0;
-        }
+        const [regRows] = await db.query("SELECT id FROM meetup_registrations WHERE user_id = ? AND meetup_id = ?", [req.user.id, meetup.id]);
+        const isRegistered = regRows.length > 0;
         if (!isRegistered) delete meetup.join_url;
-
-        // === THIS SQL QUERY IS NOW FIXED AND MORE ROBUST ===
-                const suggestedCourses = [];
-
-        // const [suggestedCourses] = await db.query(`
-        //     SELECT 
-        //         c.id, c.title, c.description, c.image_url, c.course_id_string, 
-        //         (SELECT COUNT(*) FROM pages p WHERE p.course_id = c.id) as page_count
-        //     FROM meetup_suggested_courses msc
-        //     JOIN courses c ON msc.course_id = c.id 
-        //     WHERE msc.meetup_id = ? AND c.is_active = true
-        // `, [meetup.id]);
-
+        
+        const suggestedCourses = []; // Temporarily disabled
         res.status(200).json({ ...meetup, speakers, comments, isRegistered, suggestedCourses });
     } catch (error) {
         console.error("Error fetching meetup details:", error);
@@ -341,38 +309,22 @@ app.get("/api/meetups/:meetupIdString", async (req, res) => {
     }
 });
 
-// === THIS IS THE MISSING ENDPOINT THAT IS NOW RESTORED ===
-app.get("/api/progress/:userId/:courseId", async (req, res) => {
+app.post("/api/meetups/register", verifyToken, async (req, res) => {
     try {
-        const { userId, courseId } = req.params;
-        const [progressRows] = await db.query(
-            "SELECT highest_page_index FROM user_progress WHERE user_id = ? AND course_id = ?",
-            [userId, courseId]
-        );
-        const highestPageIndex = progressRows.length > 0 ? progressRows[0].highest_page_index : -1;
-        res.status(200).json({ highestPageIndex });
-    } catch (error) {
-        console.error("Error fetching progress:", error);
-        res.status(500).json({ message: "Failed to fetch progress." });
-    }
-});
-
-app.post("/api/meetups/register", async (req, res) => {
-    try {
-        const { userId, meetupId } = req.body;
-        await db.query("INSERT INTO meetup_registrations (user_id, meetup_id) VALUES (?, ?)", [userId, meetupId]);
-        res.status(201).json({ message: "Successfully registered for the meetup!" });
+        const { meetupId } = req.body;
+        await db.query("INSERT INTO meetup_registrations (user_id, meetup_id) VALUES (?, ?)", [req.user.id, meetupId]);
+        res.status(201).json({ message: "Successfully registered!" });
     } catch (error) {
         if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: "You are already registered." });
         res.status(500).json({ message: "Registration failed." });
     }
 });
 
-app.post("/api/meetups/:meetupId/comments", async (req, res) => {
+app.post("/api/meetups/:meetupId/comments", verifyToken, async (req, res) => {
     try {
         const { meetupId } = req.params;
-        const { userId, comment_text } = req.body;
-        const [result] = await db.query("INSERT INTO meetup_comments (user_id, meetup_id, comment_text) VALUES (?, ?, ?)", [userId, meetupId, comment_text]);
+        const { comment_text } = req.body;
+        const [result] = await db.query("INSERT INTO meetup_comments (user_id, meetup_id, comment_text) VALUES (?, ?, ?)", [req.user.id, meetupId, comment_text]);
         const [commentRows] = await db.query("SELECT c.*, u.name as author_name FROM meetup_comments c JOIN users u ON c.user_id = u.id WHERE c.id = ?", [result.insertId]);
         res.status(201).json(commentRows[0]);
     } catch (error) {
@@ -380,14 +332,12 @@ app.post("/api/meetups/:meetupId/comments", async (req, res) => {
     }
 });
 
-// --- Public Teacher's Guide API ---
 app.get("/api/teacher-guide", async (req, res) => {
     try {
         const [flatList] = await db.query("SELECT * FROM teacher_guide_content ORDER BY parent_id ASC, order_index ASC");
         const buildTree = (list, parentId = null) => list.filter(item => item.parent_id === parentId).map(item => ({ ...item, children: buildTree(list, item.id) }));
         res.status(200).json(buildTree(flatList));
     } catch (error) {
-        console.error("Error fetching teacher guide:", error);
         res.status(500).json({ message: "Failed to fetch teacher guide." });
     }
 });
