@@ -69,7 +69,7 @@ app.post("/api/login", async (req, res) => {
         const query = "SELECT * FROM users WHERE email = ? OR phone = ?";
         const [results] = await db.query(query, [identifier, identifier]);
         if (results.length === 0) return res.status(404).json({ message: "User not found." });
-
+        
         const user = results[0];
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ message: "Invalid credentials." });
@@ -339,1136 +339,358 @@ app.get("/api/teacher-guide", async (req, res) => {
 // ===================================================================
 // === ADMIN PANEL APIS ==============================================
 // ===================================================================
-// Get all meetups for the admin list
-
-app.get("/api/admin/meetups", async (req, res) => {
-
-    try {
-
-        const [meetups] = await db.query("SELECT * FROM meetups ORDER BY meetup_datetime DESC");
-
-        res.status(200).json(meetups);
-
-    } catch (error) {
-
-        res.status(500).json({ message: "Failed to fetch meetups." });
-
-    }
-
-});
-
-
-
-// === NEW: Get full details for a SINGLE meetup for the editor ===
-
-app.get("/api/admin/meetups/:meetupIdString", async (req, res) => {
-
-    try {
-
-        const { meetupIdString } = req.params;
-
-        const [meetupRows] = await db.query("SELECT * FROM meetups WHERE meetup_id_string = ?", [meetupIdString]);
-
-        if (meetupRows.length === 0) return res.status(404).json({ message: "Meetup not found." });
-
-
-        const meetup = meetupRows[0];
-
-        const [speakers] = await db.query("SELECT * FROM meetup_speakers WHERE meetup_id = ?", [meetup.id]);
-
-
-        res.status(200).json({ ...meetup, speakers });
-
-    } catch (error) {
-
-        res.status(500).json({ message: "Failed to fetch meetup details." });
-
-    }
-
-});
-
-
-
-
-
-// Create a new meetup
-
-app.post("/api/admin/meetups", async (req, res) => {
-
-    const { meetupData, speakers } = req.body;
-
-    const connection = await db.getConnection();
-
-    try {
-
-        await connection.beginTransaction();
-
-
-
-        const meetupQuery = "INSERT INTO meetups (title, meetup_id_string, description, image_url, meetup_datetime, join_url, video_url, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-
-        const [meetupResult] = await connection.query(meetupQuery, [
-
-            meetupData.title,
-
-            meetupData.meetup_id_string,
-
-            meetupData.description,
-
-            meetupData.image_url,
-
-            meetupData.meetup_datetime,
-
-            meetupData.join_url,
-
-            meetupData.video_url,
-
-            meetupData.is_active ? 1 : 0 // <-- THE FIX IS HERE
-
-        ]);
-
-        const newMeetupId = meetupResult.insertId;
-
-
-
-        if (speakers && speakers.length > 0) {
-
-            const speakerQuery = "INSERT INTO meetup_speakers (meetup_id, name, title) VALUES ?";
-
-            const speakerValues = speakers.map(s => [newMeetupId, s.name, s.title]);
-
-            await connection.query(speakerQuery, [speakerValues]);
-
-        }
-
-
-
-        await connection.commit();
-
-        res.status(201).json({ message: "Meetup created successfully!", meetupId: newMeetupId });
-
-    } catch (error) {
-
-        await connection.rollback();
-
-        if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: "This Meetup ID already exists." });
-
-        res.status(500).json({ message: "Failed to create meetup." });
-
-    } finally {
-
-        connection.release();
-
-    }
-
-});
-
-
-
-// === FULLY IMPLEMENTED: Update a meetup ===
-
-app.put("/api/admin/meetups/:id", async (req, res) => {
-
-    const { id } = req.params;
-
-    const { meetupData, speakers } = req.body;
-
-    const connection = await db.getConnection();
-
-    try {
-
-        await connection.beginTransaction();
-
-
-
-        const meetupQuery = "UPDATE meetups SET title = ?, meetup_id_string = ?, description = ?, image_url = ?, meetup_datetime = ?, join_url = ?, video_url = ?, is_active = ? WHERE id = ?";
-
-        await connection.query(meetupQuery, [
-
-            meetupData.title, meetupData.meetup_id_string, meetupData.description, meetupData.image_url,
-
-            meetupData.meetup_datetime, meetupData.join_url, meetupData.video_url, meetupData.is_active ? 1 : 0, id
-
-        ]);
-
-
-
-        // Delete old speakers and insert new ones
-
-        await connection.query("DELETE FROM meetup_speakers WHERE meetup_id = ?", [id]);
-
-        if (speakers && speakers.length > 0) {
-
-            const speakerQuery = "INSERT INTO meetup_speakers (meetup_id, name, title) VALUES ?";
-
-            const speakerValues = speakers.map(s => [id, s.name, s.title]);
-
-            await connection.query(speakerQuery, [speakerValues]);
-
-        }
-
-
-
-        await connection.commit();
-
-        res.status(200).json({ message: "Meetup updated successfully!" });
-
-    } catch (error) {
-
-        await connection.rollback();
-
-        if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: "This Meetup ID is already in use." });
-
-        res.status(500).json({ message: "Failed to update meetup." });
-
-    } finally {
-
-        connection.release();
-
-    }
-
-});
-
-
-
-// Delete a meetup
-
-app.delete("/api/admin/meetups/:id", async (req, res) => {
-
-    try {
-
-        const { id } = req.params;
-
-        await db.query("DELETE FROM meetups WHERE id = ?", [id]);
-
-        res.status(200).json({ message: "Meetup deleted successfully." });
-
-    } catch (error) {
-
-        res.status(500).json({ message: "Failed to delete meetup." });
-
-    }
-
-});
-
-
-
-
 
 // --- User Management ---
-
 app.get("/api/admin/users", async (req, res) => {
-
     try {
-
-        const query = "SELECT id, name, email, phone, gender, school_name, role, grade FROM users";
-
-        const [results] = await db.query(query);
-
+        const [results] = await db.query("SELECT id, name, email, phone, gender, school_name, role, grade FROM users");
         res.status(200).json(results);
-
     } catch (error) {
-
         res.status(500).json({ message: "Database error." });
-
     }
-
 });
-
-
 
 app.delete("/api/admin/users/:id", async (req, res) => {
-
     try {
-
         const { id } = req.params;
-
-        const query = "DELETE FROM users WHERE id = ?";
-
-        const [result] = await db.query(query, [id]);
-
+        const [result] = await db.query("DELETE FROM users WHERE id = ?", [id]);
         if (result.affectedRows === 0) return res.status(404).json({ message: "User not found." });
-
         res.status(200).json({ message: "User deleted successfully." });
-
     } catch (error) {
-
         res.status(500).json({ message: "Database error." });
-
     }
-
 });
-
-
 
 // --- Section Management ---
-
 app.get("/api/admin/sections", async (req, res) => {
-
     try {
-
         const [sections] = await db.query("SELECT * FROM sections ORDER BY order_index ASC, title ASC");
-
         res.status(200).json(sections);
-
     } catch (error) {
-
         console.error("Error fetching sections:", error);
-
         res.status(500).json({ message: "Failed to fetch sections." });
-
     }
-
 });
-
-
 
 app.get("/api/admin/sections-with-courses", async (req, res) => {
-
     try {
-
         const [sections] = await db.query("SELECT * FROM sections ORDER BY order_index ASC, title ASC");
-
         const [courses] = await db.query("SELECT id, title, course_id_string, is_active, section_id FROM courses ORDER BY title ASC");
-
         const coursesBySection = {};
-
         courses.forEach(course => {
-
             const sectionId = course.section_id || 'uncategorized';
-
             if (!coursesBySection[sectionId]) coursesBySection[sectionId] = [];
-
             coursesBySection[sectionId].push(course);
-
         });
-
         const sectionsWithCourses = sections.map(section => ({ ...section, courses: coursesBySection[section.id] || [] }));
-
         const response = { sections: sectionsWithCourses, uncategorized: coursesBySection['uncategorized'] || [] };
-
         res.status(200).json(response);
-
     } catch (error) {
-
         console.error("Error fetching sections with courses:", error);
-
         res.status(500).json({ message: "Failed to fetch data." });
-
     }
-
 });
-
-
 
 app.post("/api/admin/sections", async (req, res) => {
-
     try {
-
         const { title } = req.body;
-
         if (!title) return res.status(400).json({ message: "Title is required." });
-
         const [result] = await db.query("INSERT INTO sections (title) VALUES (?)", [title]);
-
         res.status(201).json({ id: result.insertId, title });
-
     } catch (error) {
-
         console.error("Error creating section:", error);
-
         res.status(500).json({ message: "Failed to create section." });
-
     }
-
 });
-
-
 
 app.put("/api/admin/sections/:id", async (req, res) => {
-
     try {
-
         const { id } = req.params;
-
         const { title } = req.body;
-
         await db.query("UPDATE sections SET title = ? WHERE id = ?", [title, id]);
-
         res.status(200).json({ message: "Section updated successfully." });
-
     } catch (error) {
-
         console.error("Error updating section:", error);
-
         res.status(500).json({ message: "Failed to update section." });
-
     }
-
 });
-
-
 
 app.delete("/api/admin/sections/:id", async (req, res) => {
-
     try {
-
         const { id } = req.params;
-
         const [courseRows] = await db.query("SELECT COUNT(*) as course_count FROM courses WHERE section_id = ?", [id]);
-
-        if (courseRows[0].course_count > 0) return res.status(400).json({ message: `Չի կարելի ջնջել այս բաժինը, քանի որ այն պարունակում է ${courseRows[0].course_count} դասընթաց։` });
-
+        if (courseRows[0].course_count > 0) return res.status(400).json({ message: `Cannot delete section as it contains ${courseRows[0].course_count} courses.` });
         await db.query("DELETE FROM sections WHERE id = ?", [id]);
-
         res.status(200).json({ message: "Section deleted successfully." });
-
     } catch (error) {
-
         console.error("Error deleting section:", error);
-
         res.status(500).json({ message: "Failed to delete section." });
-
     }
-
 });
-
-
 
 // --- Course Management ---
-
 app.get("/api/admin/courses", async (req, res) => {
-
     try {
-
         const [courses] = await db.query("SELECT * FROM courses ORDER BY created_at DESC");
-
         res.status(200).json(courses);
-
     } catch (error) {
-
         console.error("Error fetching courses:", error);
-
         res.status(500).json({ message: "Failed to fetch courses." });
-
     }
-
 });
-
-
 
 app.post("/api/admin/courses", async (req, res) => {
-
     try {
-
         const { title, course_id_string } = req.body;
-
         if (!title || !course_id_string) return res.status(400).json({ message: "Title and Course ID are required." });
-
         const [result] = await db.query("INSERT INTO courses (title, course_id_string) VALUES (?, ?)", [title, course_id_string]);
-
         res.status(201).json({ message: "Course created successfully!", courseId: result.insertId, course_id_string });
-
     } catch (error) {
-
         console.error("Error creating course:", error);
-
         if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: "This Course ID already exists." });
-
         res.status(500).json({ message: "Failed to create course." });
-
     }
-
 });
-
-
 
 app.get("/api/admin/courses/:courseIdString", async (req, res) => {
-
     try {
-
         const { courseIdString } = req.params;
-
         const [courseRows] = await db.query("SELECT * FROM courses WHERE course_id_string = ?", [courseIdString]);
-
         if (courseRows.length === 0) return res.status(404).json({ message: "Course not found." });
-
         const course = courseRows[0];
-
         const [pages] = await db.query("SELECT * FROM pages WHERE course_id = ? ORDER BY page_number", [course.id]);
-
         const pagesWithComponents = await Promise.all(pages.map(async (page) => {
-
             const [components] = await db.query("SELECT * FROM course_components WHERE page_id = ? ORDER BY order_index", [page.id]);
-
             return { ...page, components };
-
         }));
-
-        const fullCourseData = { ...course, pages: pagesWithComponents };
-
-        res.status(200).json(fullCourseData);
-
+        res.status(200).json({ ...course, pages: pagesWithComponents });
     } catch (error) {
-
         console.error(`Error fetching course ${req.params.courseIdString}:`, error);
-
         res.status(500).json({ message: "Failed to fetch course data." });
-
     }
-
 });
-
-
 
 app.put("/api/admin/courses/:id", async (req, res) => {
-
     try {
-
         const { id } = req.params;
-
         const { title, course_id_string, description, image_url, section_id, is_active } = req.body;
-
         if (!title || !course_id_string) return res.status(400).json({ message: "Title and Course ID are required." });
-
         const query = `UPDATE courses SET title = ?, course_id_string = ?, description = ?, image_url = ?, section_id = ?, is_active = ? WHERE id = ?`;
-
-        const values = [title, course_id_string, description, image_url, section_id || null, is_active, id];
-
+        const values = [title, course_id_string, description, image_url, section_id || null, is_active ? 1 : 0, id];
         const [result] = await db.query(query, values);
-
         if (result.affectedRows === 0) return res.status(404).json({ message: "Course not found." });
-
         res.status(200).json({ message: "Course updated successfully!" });
-
     } catch (error) {
-
         console.error("Error updating course:", error);
-
         if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: "This Course ID is already in use." });
-
         res.status(500).json({ message: "Failed to update course." });
-
     }
-
 });
-
-
 
 app.delete("/api/admin/courses/:id", async (req, res) => {
-
     try {
-
         const { id } = req.params;
-
         await db.query("DELETE FROM courses WHERE id = ?", [id]);
-
         res.status(200).json({ message: "Course deleted successfully." });
-
     } catch (error) {
-
         console.error("Error deleting course:", error);
-
         res.status(500).json({ message: "Failed to delete course." });
-
     }
-
 });
-
-
 
 // --- Page & Component Management ---
-
 app.post("/api/admin/pages", async (req, res) => {
-
     try {
-
         const { course_id } = req.body;
-
         if (!course_id) return res.status(400).json({ message: "Course ID is required." });
-
         const pageNumberQuery = "SELECT MAX(page_number) as max_page FROM pages WHERE course_id = ?";
-
         const [pageRows] = await db.query(pageNumberQuery, [course_id]);
-
         const newPageNumber = (pageRows[0].max_page || 0) + 1;
-
         const insertQuery = "INSERT INTO pages (course_id, page_number, title) VALUES (?, ?, ?)";
-
         const newPageTitle = `New Page ${newPageNumber}`;
-
         const [result] = await db.query(insertQuery, [course_id, newPageNumber, newPageTitle]);
-
-        const newPage = { id: result.insertId, course_id, page_number: newPageNumber, title: newPageTitle, components: [] };
-
-        res.status(201).json(newPage);
-
+        res.status(201).json({ id: result.insertId, course_id, page_number: newPageNumber, title: newPageTitle, components: [] });
     } catch (error) {
-
         console.error("Error creating new page:", error);
-
         res.status(500).json({ message: "Failed to create new page." });
-
     }
-
 });
-
-
-
-// === NEW ENDPOINT TO DELETE A PAGE ===
 
 app.delete("/api/admin/pages/:pageId", async (req, res) => {
-
     try {
-
         const { pageId } = req.params;
-
-        // The ON DELETE CASCADE constraint in the DB will handle deleting components
-
         await db.query("DELETE FROM pages WHERE id = ?", [pageId]);
-
         res.status(200).json({ message: "Page deleted successfully." });
-
     } catch (error) {
-
         console.error("Error deleting page:", error);
-
         res.status(500).json({ message: "Failed to delete page." });
-
     }
-
 });
-
-
-
-
 
 app.put("/api/admin/pages/:pageId/components", async (req, res) => {
-
     const { pageId } = req.params;
-
     const { components } = req.body;
-
     if (!Array.isArray(components)) return res.status(400).json({ message: "Components must be an array." });
-
     const connection = await db.getConnection();
-
     try {
-
         await connection.beginTransaction();
-
         await connection.query("DELETE FROM course_components WHERE page_id = ?", [pageId]);
-
         if (components.length > 0) {
-
             const insertQuery = "INSERT INTO course_components (page_id, component_type, order_index, props) VALUES ?";
-
             const values = components.map((component, index) => [pageId, component.component_type, index, JSON.stringify(component.props)]);
-
             await connection.query(insertQuery, [values]);
-
         }
-
         await connection.commit();
-
         res.status(200).json({ message: "Page saved successfully!" });
-
     } catch (error) {
-
         await connection.rollback();
-
         console.error(`Error saving page ${pageId}:`, error);
-
         res.status(500).json({ message: "Failed to save page." });
-
     } finally {
-
         connection.release();
-
     }
-
 });
 
-
-
-
-
-app.put("/api/admin/pages/:pageId/components", async (req, res) => {
-
-    const { pageId } = req.params;
-
-    const { components } = req.body;
-
-    if (!Array.isArray(components)) return res.status(400).json({ message: "Components must be an array." });
-
-    const connection = await db.getConnection();
-
+// --- Meetup Management ---
+app.get("/api/admin/meetups", async (req, res) => {
     try {
-
-        await connection.beginTransaction();
-
-        await connection.query("DELETE FROM course_components WHERE page_id = ?", [pageId]);
-
-        if (components.length > 0) {
-
-            const insertQuery = "INSERT INTO course_components (page_id, component_type, order_index, props) VALUES ?";
-
-            const values = components.map((component, index) => [pageId, component.component_type, index, JSON.stringify(component.props)]);
-
-            await connection.query(insertQuery, [values]);
-
-        }
-
-        await connection.commit();
-
-        res.status(200).json({ message: "Page saved successfully!" });
-
-    } catch (error) {
-
-        await connection.rollback();
-
-        console.error(`Error saving page ${pageId}:`, error);
-
-        res.status(500).json({ message: "Failed to save page." });
-
-    } finally {
-
-        connection.release();
-
-    }
-
-});
-
-
-
-// --- Start Server ---
-
-const PORT = process.env.PORT || 3001;
-
-app.listen(PORT, () => {
-
-    console.log(`Server is running on port ${PORT}`);
-
-});
-
-
-
-
-
-// --- PROGRESS APIS ---
-
-
-
-// Get a user's progress for a specific course
-
-app.get("/api/progress/:userId/:courseId", async (req, res) => {
-
-    try {
-
-        const { userId, courseId } = req.params;
-
-        const [progressRows] = await db.query(
-
-            "SELECT highest_page_index FROM user_progress WHERE user_id = ? AND course_id = ?",
-
-            [userId, courseId]
-
-        );
-
-        const highestPageIndex = progressRows.length > 0 ? progressRows[0].highest_page_index : -1;
-
-        res.status(200).json({ highestPageIndex });
-
-    } catch (error) {
-
-        console.error("Error fetching progress:", error);
-
-        res.status(500).json({ message: "Failed to fetch progress." });
-
-    }
-
-});
-
-
-
-// Save a user's progress
-
-app.post("/api/progress", async (req, res) => {
-
-    try {
-
-        const { userId, courseId, pageIndex } = req.body;
-
-        const query = `
-
-INSERT INTO user_progress (user_id, course_id, highest_page_index)
-
-VALUES (?, ?, ?)
-
-ON DUPLICATE KEY UPDATE highest_page_index = GREATEST(highest_page_index, VALUES(highest_page_index))
-
-`;
-
-        await db.query(query, [userId, courseId, pageIndex]);
-
-        res.status(200).json({ message: "Progress saved." });
-
-    } catch (error) {
-
-        console.error("Error saving progress:", error);
-
-        res.status(500).json({ message: "Failed to save progress." });
-
-    }
-
-});
-
-
-
-
-
-// === NEW ENDPOINT to get progress for ALL courses for a user ===
-
-app.get("/api/progress/:userId", async (req, res) => {
-
-    try {
-
-        const { userId } = req.params;
-
-        const [progressRows] = await db.query(
-
-            "SELECT course_id, highest_page_index FROM user_progress WHERE user_id = ?",
-
-            [userId]
-
-        );
-
-        // Convert the array to a more useful object: { courseId: pageIndex }
-
-        const progressMap = progressRows.reduce((acc, row) => {
-
-            acc[row.course_id] = row.highest_page_index;
-
-            return acc;
-
-        }, {});
-
-        res.status(200).json(progressMap);
-
-    } catch (error) {
-
-        console.error("Error fetching all progress:", error);
-
-        res.status(500).json({ message: "Failed to fetch progress." });
-
-    }
-
-});
-
-
-
-// Save a user's progress
-
-app.post("/api/progress", async (req, res) => {
-
-    try {
-
-        const { userId, courseId, pageIndex } = req.body;
-
-        const query = `
-
-INSERT INTO user_progress (user_id, course_id, highest_page_index)
-
-VALUES (?, ?, ?)
-
-ON DUPLICATE KEY UPDATE highest_page_index = GREATEST(highest_page_index, VALUES(highest_page_index))
-
-`;
-
-        await db.query(query, [userId, courseId, pageIndex]);
-
-        res.status(200).json({ message: "Progress saved." });
-
-    } catch (error) {
-
-        console.error("Error saving progress:", error);
-
-        res.status(500).json({ message: "Failed to save progress." });
-
-    }
-
-});
-
-
-
-// === NEW ENDPOINT to delete/reset progress for a course ===
-
-app.delete("/api/progress/:userId/:courseId", async (req, res) => {
-
-    try {
-
-        const { userId, courseId } = req.params;
-
-        await db.query(
-
-            "DELETE FROM user_progress WHERE user_id = ? AND course_id = ?",
-
-            [userId, courseId]
-
-        );
-
-        res.status(200).json({ message: "Progress reset successfully." });
-
-    } catch (error) {
-
-        console.error("Error resetting progress:", error);
-
-        res.status(500).json({ message: "Failed to reset progress." });
-
-    }
-
-});
-
-
-
-
-
-
-
-// --- NEW PUBLIC MEETUP APIS ---
-
-
-
-// Get all active meetups for the user list
-
-app.get("/api/meetups", async (req, res) => {
-
-    try {
-
-        const query = "SELECT * FROM meetups WHERE is_active = true ORDER BY meetup_datetime DESC";
-
-        const [meetups] = await db.query(query);
-
+        const [meetups] = await db.query("SELECT * FROM meetups ORDER BY meetup_datetime DESC");
         res.status(200).json(meetups);
-
     } catch (error) {
-
         res.status(500).json({ message: "Failed to fetch meetups." });
-
     }
-
 });
 
-
-
-// Get full details for a single meetup page
-
-app.get("/api/meetups/:meetupIdString", async (req, res) => {
-
+app.get("/api/admin/meetups/:meetupIdString", async (req, res) => {
     try {
-
         const { meetupIdString } = req.params;
-
-        const { userId } = req.query; // Get userId from query to check registration
-
-
-
         const [meetupRows] = await db.query("SELECT * FROM meetups WHERE meetup_id_string = ?", [meetupIdString]);
-
         if (meetupRows.length === 0) return res.status(404).json({ message: "Meetup not found." });
-
         const meetup = meetupRows[0];
-
-
-
         const [speakers] = await db.query("SELECT * FROM meetup_speakers WHERE meetup_id = ?", [meetup.id]);
-
-        const [comments] = await db.query("SELECT c.*, u.name as author_name FROM meetup_comments c JOIN users u ON c.user_id = u.id WHERE c.meetup_id = ? ORDER BY c.created_at DESC", [meetup.id]);
-
-
-        let isRegistered = false;
-
-        if (userId) {
-
-            const [regRows] = await db.query("SELECT id FROM meetup_registrations WHERE user_id = ? AND meetup_id = ?", [userId, meetup.id]);
-
-            isRegistered = regRows.length > 0;
-
-        }
-
-
-
-        // Don't show the join_url unless the user is registered
-
-        if (!isRegistered) {
-
-            delete meetup.join_url;
-
-        }
-
-
-
-        res.status(200).json({ ...meetup, speakers, comments, isRegistered });
-
-
-
+        const [suggestedCourseRows] = await db.query("SELECT course_id FROM meetup_suggested_courses WHERE meetup_id = ?", [meetup.id]);
+        const suggestedCourseIds = suggestedCourseRows.map(row => row.course_id);
+        res.status(200).json({ ...meetup, speakers, suggestedCourseIds });
     } catch (error) {
-
         res.status(500).json({ message: "Failed to fetch meetup details." });
-
     }
-
 });
 
-
-
-// Register a user for a meetup
-
-app.post("/api/meetups/register", async (req, res) => {
-
+app.post("/api/admin/meetups", async (req, res) => {
+    const { meetupData, speakers, suggestedCourseIds } = req.body;
+    const connection = await db.getConnection();
     try {
-
-        const { userId, meetupId } = req.body;
-
-        await db.query("INSERT INTO meetup_registrations (user_id, meetup_id) VALUES (?, ?)", [userId, meetupId]);
-
-        res.status(201).json({ message: "Successfully registered for the meetup!" });
-
+        await connection.beginTransaction();
+        const meetupQuery = "INSERT INTO meetups (title, meetup_id_string, description, image_url, meetup_datetime, join_url, video_url, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        const [meetupResult] = await connection.query(meetupQuery, [meetupData.title, meetupData.meetup_id_string, meetupData.description, meetupData.image_url, meetupData.meetup_datetime, meetupData.join_url, meetupData.video_url, meetupData.is_active ? 1 : 0]);
+        const newMeetupId = meetupResult.insertId;
+        if (speakers && speakers.length > 0) {
+            const speakerQuery = "INSERT INTO meetup_speakers (meetup_id, name, title) VALUES ?";
+            const speakerValues = speakers.map(s => [newMeetupId, s.name, s.title]);
+            await connection.query(speakerQuery, [speakerValues]);
+        }
+        if (suggestedCourseIds && suggestedCourseIds.length > 0) {
+            const suggestedQuery = "INSERT INTO meetup_suggested_courses (meetup_id, course_id) VALUES ?";
+            const suggestedValues = suggestedCourseIds.map(courseId => [newMeetupId, courseId]);
+            await connection.query(suggestedQuery, [suggestedValues]);
+        }
+        await connection.commit();
+        res.status(201).json({ message: "Meetup created successfully!", meetupId: newMeetupId });
     } catch (error) {
-
-        if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: "You are already registered." });
-
-        res.status(500).json({ message: "Registration failed." });
-
+        await connection.rollback();
+        if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: "This Meetup ID already exists." });
+        res.status(500).json({ message: "Failed to create meetup." });
+    } finally {
+        connection.release();
     }
-
 });
 
-
-
-// Post a comment
-
-app.post("/api/meetups/:meetupId/comments", async (req, res) => {
-
+app.put("/api/admin/meetups/:id", async (req, res) => {
+    const { id } = req.params;
+    const { meetupData, speakers, suggestedCourseIds } = req.body;
+    const connection = await db.getConnection();
     try {
-
-        const { meetupId } = req.params;
-
-        const { userId, comment_text } = req.body;
-
-        const [result] = await db.query("INSERT INTO meetup_comments (user_id, meetup_id, comment_text) VALUES (?, ?, ?)", [userId, meetupId, comment_text]);
-
-
-        // Return the full new comment object
-
-        const [commentRows] = await db.query("SELECT c.*, u.name as author_name FROM meetup_comments c JOIN users u ON c.user_id = u.id WHERE c.id = ?", [result.insertId]);
-
-        res.status(201).json(commentRows[0]);
-
+        await connection.beginTransaction();
+        const meetupQuery = "UPDATE meetups SET title = ?, meetup_id_string = ?, description = ?, image_url = ?, meetup_datetime = ?, join_url = ?, video_url = ?, is_active = ? WHERE id = ?";
+        await connection.query(meetupQuery, [meetupData.title, meetupData.meetup_id_string, meetupData.description, meetupData.image_url, meetupData.meetup_datetime, meetupData.join_url, meetupData.video_url, meetupData.is_active ? 1 : 0, id]);
+        await connection.query("DELETE FROM meetup_speakers WHERE meetup_id = ?", [id]);
+        if (speakers && speakers.length > 0) {
+            const speakerQuery = "INSERT INTO meetup_speakers (meetup_id, name, title) VALUES ?";
+            const speakerValues = speakers.map(s => [id, s.name, s.title]);
+            await connection.query(speakerQuery, [speakerValues]);
+        }
+        await connection.query("DELETE FROM meetup_suggested_courses WHERE meetup_id = ?", [id]);
+        if (suggestedCourseIds && suggestedCourseIds.length > 0) {
+            const suggestedQuery = "INSERT INTO meetup_suggested_courses (meetup_id, course_id) VALUES ?";
+            const suggestedValues = suggestedCourseIds.map(courseId => [id, courseId]);
+            await connection.query(suggestedQuery, [suggestedValues]);
+        }
+        await connection.commit();
+        res.status(200).json({ message: "Meetup updated successfully!" });
     } catch (error) {
-
-        res.status(500).json({ message: "Failed to post comment." });
-
+        await connection.rollback();
+        if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: "This Meetup ID is already in use." });
+        res.status(500).json({ message: "Failed to update meetup." });
+    } finally {
+        connection.release();
     }
-
 });
 
+app.delete("/api/admin/meetups/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.query("DELETE FROM meetups WHERE id = ?", [id]);
+        res.status(200).json({ message: "Meetup deleted successfully." });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to delete meetup." });
+    }
+});
 
-
-
-
-// --- NEW: ADMIN TEACHER'S GUIDE APIS ---
-
-
-
-// Get the flat list of all guide content for the editor
-
+// --- Teacher's Guide Management ---
 app.get("/api/admin/teacher-guide", async (req, res) => {
-
     try {
-
         const [content] = await db.query("SELECT * FROM teacher_guide_content ORDER BY parent_id ASC, order_index ASC");
-
         res.status(200).json(content);
-
     } catch (error) {
-
         res.status(500).json({ message: "Failed to fetch guide content." });
-
     }
-
 });
-
-
-
-// Create a new content block (dropdown or text)
 
 app.post("/api/admin/teacher-guide", async (req, res) => {
-
     try {
-
         const { parent_id, content_type, title, content_body, order_index } = req.body;
-
         const query = "INSERT INTO teacher_guide_content (parent_id, content_type, title, content_body, order_index) VALUES (?, ?, ?, ?, ?)";
-
         const [result] = await db.query(query, [parent_id || null, content_type, title, content_body, order_index]);
-
         res.status(201).json({ id: result.insertId, ...req.body });
-
     } catch (error) {
-
         res.status(500).json({ message: "Failed to create content block." });
-
     }
-
 });
-
-
-
-// Update a content block
 
 app.put("/api/admin/teacher-guide/:id", async (req, res) => {
-
     try {
-
         const { id } = req.params;
-
-        const { title, content_body } = req.body; // Only allow updating these fields for now
-
+        const { title, content_body } = req.body;
         const query = "UPDATE teacher_guide_content SET title = ?, content_body = ? WHERE id = ?";
-
         await db.query(query, [title, content_body, id]);
-
         res.status(200).json({ message: "Content updated successfully." });
-
     } catch (error) {
-
         res.status(500).json({ message: "Failed to update content." });
-
     }
-
 });
 
-
-
-// Delete a content block (and its children)
-
 app.delete("/api/admin/teacher-guide/:id", async (req, res) => {
-
     try {
-
         const { id } = req.params;
-
-        // ON DELETE CASCADE in the DB handles deleting children
-
         await db.query("DELETE FROM teacher_guide_content WHERE id = ?", [id]);
-
         res.status(200).json({ message: "Content deleted successfully." });
-
     } catch (error) {
-
         res.status(500).json({ message: "Failed to delete content." });
-
     }
+});
 
+// --- Start Server ---
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
