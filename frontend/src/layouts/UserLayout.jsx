@@ -151,7 +151,7 @@ const UserLayout = () => {
               isSidebarOpen ? "" : "hidden"
             }`}
           >
-            CyberStorm
+            CyberSchool
           </h1>
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
