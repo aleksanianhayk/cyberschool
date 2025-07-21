@@ -1,10 +1,13 @@
 // /frontend/src/pages/AuthenticationPage.jsx
 
 import React, { useState, useContext } from "react";
-import api from '../api/api.js'; // Use the new secure api utility
+import axios from "axios"; // Reverted back to using axios directly
 import { AuthContext } from "../context/AuthContext.jsx";
 import { useNavigate, useLocation } from "react-router-dom";
-import { jwtDecode } from 'jwt-decode'; // Import the decoder
+import { jwtDecode } from 'jwt-decode';
+
+// Define the full API URL, which will be used by all functions in this file
+const API_URL = `${import.meta.env.VITE_API_URL}/api`;
 
 const AuthenticationPage = () => {
   const [activeTab, setActiveTab] = useState("login");
@@ -52,10 +55,9 @@ const LoginForm = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // This function now accepts a token
   const handleLoginSuccess = (token) => {
-    const user = jwtDecode(token); // Decode the token to get user info
-    login(token); // Pass the raw token to the context for storage
+    const user = jwtDecode(token);
+    login(token);
 
     if (user.role === "admin" || user.role === "superadmin") {
       navigate("/admin");
@@ -68,13 +70,12 @@ const LoginForm = () => {
     e.preventDefault();
     setError("");
     try {
-      // Use the 'api' utility instead of axios
-      const res = await api.post(`/login`, formData);
+      // Use axios with the full, correct URL
+      const res = await axios.post(`${API_URL}/login`, formData);
       if (res.data.twoFactorRequired) {
         setUserIdFor2fa(res.data.userId);
         setIs2faModalOpen(true);
       } else {
-        // On success, the backend sends a token
         handleLoginSuccess(res.data.token);
       }
     } catch (err) {
@@ -124,7 +125,7 @@ const LoginForm = () => {
       {is2faModalOpen && (
         <Login2faModal
           userId={userIdFor2fa}
-          onSuccess={handleLoginSuccess} // Pass the same success handler
+          onSuccess={handleLoginSuccess}
           onClose={() => setIs2faModalOpen(false)}
         />
       )}
@@ -140,12 +141,11 @@ const Login2faModal = ({ userId, onSuccess, onClose }) => {
     e.preventDefault();
     setError("");
     try {
-      // Use the 'api' utility instead of axios
-      const res = await api.post(`/login/2fa/verify`, {
+      // Use axios with the full, correct URL
+      const res = await axios.post(`${API_URL}/login/2fa/verify`, {
         userId,
         token,
       });
-      // On success, the backend sends a new token
       onSuccess(res.data.token);
     } catch (err) {
       setError(err.response?.data?.message || "Verification failed.");
@@ -220,8 +220,8 @@ const RegisterForm = () => {
     };
 
     try {
-      // Use the 'api' utility instead of axios
-      await api.post(`/register`, submissionData);
+      // Use axios with the full, correct URL
+      await axios.post(`${API_URL}/register`, submissionData);
       setSuccess("Գրանցումը հաջողվեց։ Խնդրում ենք մուտք գործել։");
       e.target.reset();
     } catch (err) {
