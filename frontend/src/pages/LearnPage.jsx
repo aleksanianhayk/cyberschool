@@ -1,6 +1,6 @@
 // /frontend/src/pages/LearnPage.jsx
 
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext.jsx';
@@ -18,27 +18,31 @@ const LearnPage = () => {
         const fetchInitialData = async () => {
             if (!user) return;
             try {
+                // === THE FIX IS HERE ===
+                // Get the token from localStorage
+                const token = localStorage.getItem('cyberstorm_token');
+                
+                // Create the authorization header
+                const config = {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                };
+
+                // Fetch sections/courses and user progress at the same time, including the header
                 const [sectionsRes, progressRes] = await Promise.all([
-                    axios.get(`${API_URL}/sections-with-courses`),
-                    axios.get(`${API_URL}/progress/${user.id}`)
+                    axios.get(`${API_URL}/sections-with-courses`, config),
+                    axios.get(`${API_URL}/progress/${user.id}`, config)
                 ]);
                 
-                const fetchedSections = sectionsRes.data;
-                setSections(fetchedSections);
+                setSections(sectionsRes.data);
                 setProgress(progressRes.data);
 
-                // === UPDATED LOGIC FOR DEFAULT FOLDING ===
-                // All sections will be closed by default...
                 const initialOpenState = {};
-                fetchedSections.forEach(section => {
-                    initialOpenState[section.id] = false;
+                sectionsRes.data.forEach((section, index) => {
+                    // Only the first section is open by default
+                    initialOpenState[section.id] = index === 0;
                 });
-
-                // ...except for the very first one.
-                if (fetchedSections.length > 0) {
-                    initialOpenState[fetchedSections[0].id] = true;
-                }
-                
                 setOpenSections(initialOpenState);
 
             } catch (error) {
@@ -69,7 +73,7 @@ const LearnPage = () => {
                                 </svg>
                             </button>
                             
-                            <div className={`transition-all ease-in-out duration-300 ${openSections[section.id] ? 'max-h-[1000px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
+                            <div className={`transition-all ease-in-out duration-500 overflow-hidden ${openSections[section.id] ? 'max-h-[1000px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                                     {section.courses.map(course => (
                                         <CourseCard 
@@ -98,12 +102,8 @@ const ConfirmationModal = ({ title, message, onConfirm, onCancel }) => (
             <h2 className="text-xl font-bold mb-4">{title}</h2>
             <p className="text-gray-600 mb-6">{message}</p>
             <div className="flex justify-center gap-4">
-                <button onClick={onCancel} className="px-6 py-2 bg-gray-200 rounded-md hover:bg-gray-300">
-                    Չեղարկել
-                </button>
-                <button onClick={onConfirm} className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700">
-                    Հաստատել
-                </button>
+                <button onClick={onCancel} className="px-6 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Չեղարկել</button>
+                <button onClick={onConfirm} className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700">Հաստատել</button>
             </div>
         </div>
     </div>
@@ -121,7 +121,6 @@ const CourseCard = ({ course, progress, userId, onRestart }) => {
     const handleCopyLink = () => {
         const link = `${window.location.origin}/learn/course/${course.course_id_string}`;
         navigator.clipboard.writeText(link).then(() => {
-            alert('Հղումը պատճենված է։');
             setOptionsOpen(false);
         });
     };
@@ -129,10 +128,13 @@ const CourseCard = ({ course, progress, userId, onRestart }) => {
     const handleRestart = async () => {
         setIsRestartModalOpen(false);
         try {
-            await axios.delete(`${API_URL}/progress/${userId}/${course.id}`);
+            const token = localStorage.getItem('cyberstorm_token');
+            await axios.delete(`${API_URL}/progress/${userId}/${course.id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             onRestart(); 
         } catch (error) {
-            alert('Առաջընթացը զրոյացնել չհաջողվեց։');
+            console.error('Failed to restart progress', error);
         }
     };
 
