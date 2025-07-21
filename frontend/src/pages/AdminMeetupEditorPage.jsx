@@ -10,7 +10,9 @@ const AdminMeetupEditorPage = () => {
     const { meetupIdString } = useParams();
     const navigate = useNavigate();
     const isNew = !meetupIdString;
-    const [meetupId, setMeetupId] = useState(null); // To store the numeric ID for updates
+    const [meetupId, setMeetupId] = useState(null);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
 
     const [meetupData, setMeetupData] = useState({
         title: '',
@@ -24,18 +26,16 @@ const AdminMeetupEditorPage = () => {
     });
     const [speakers, setSpeakers] = useState([{ name: '', title: '' }]);
 
-    // Fetch existing meetup data if in edit mode
     useEffect(() => {
         if (!isNew) {
             const fetchMeetup = async () => {
                 try {
-                    const res = await axios.get(`${API_URL}/${meetupIdString}`);
+                    const token = localStorage.getItem('cyberstorm_token');
+                    const res = await axios.get(`${API_URL}/${meetupIdString}`, { headers: { Authorization: `Bearer ${token}` } });
                     const { speakers, ...data } = res.data;
                     
-                    // Format datetime for the input field
                     if (data.meetup_datetime) {
                         const dt = new Date(data.meetup_datetime);
-                        // Adjust for timezone offset before formatting
                         dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
                         data.meetup_datetime = dt.toISOString().slice(0, 16);
                     }
@@ -44,7 +44,7 @@ const AdminMeetupEditorPage = () => {
                     setSpeakers(speakers.length > 0 ? speakers : [{ name: '', title: '' }]);
                     setMeetupId(data.id);
                 } catch (error) {
-                    alert('Could not load meetup data.');
+                    setError('Could not load meetup data.');
                 }
             };
             fetchMeetup();
@@ -77,18 +77,23 @@ const AdminMeetupEditorPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+        setSuccess('');
         try {
+            const token = localStorage.getItem('cyberstorm_token');
+            const config = { headers: { Authorization: `Bearer ${token}` } };
             const finalSpeakers = speakers.filter(s => s.name.trim() !== '');
+
             if (isNew) {
-                await axios.post(API_URL, { meetupData, speakers: finalSpeakers });
-                alert('Meetup-ը հաջողությամբ ստեղծվեց։');
+                await axios.post(API_URL, { meetupData, speakers: finalSpeakers }, config);
+                setSuccess('Meetup-ը հաջողությամբ ստեղծվեց։');
             } else {
-                await axios.put(`${API_URL}/${meetupId}`, { meetupData, speakers: finalSpeakers });
-                alert('Meetup-ը հաջողությամբ թարմացվեց։');
+                await axios.put(`${API_URL}/${meetupId}`, { meetupData, speakers: finalSpeakers }, config);
+                setSuccess('Meetup-ը հաջողությամբ թարմացվեց։');
             }
-            navigate('/admin/meetups');
+            setTimeout(() => navigate('/admin/meetups'), 1500); // Redirect after a short delay
         } catch (error) {
-            alert(error.response?.data?.message || 'Սխալ՝ պահպանելիս։');
+            setError(error.response?.data?.message || 'Սխալ՝ պահպանելիս։');
         }
     };
 
@@ -98,6 +103,9 @@ const AdminMeetupEditorPage = () => {
             <h1 className="text-3xl font-bold mb-6">{isNew ? 'Ստեղծել նոր Meetup' : 'Խմբագրել Meetup'}</h1>
 
             <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md space-y-6">
+                {error && <p className="text-red-500 bg-red-100 p-3 rounded-md">{error}</p>}
+                {success && <p className="text-green-500 bg-green-100 p-3 rounded-md">{success}</p>}
+                
                 {/* Meetup Details */}
                 <input name="title" value={meetupData.title} onChange={handleMeetupChange} placeholder="Վերնագիր" className="w-full p-2 border rounded"/>
                 <input name="meetup_id_string" value={meetupData.meetup_id_string} onChange={handleMeetupChange} placeholder="Meetup ID (for URL)" className="w-full p-2 border rounded"/>

@@ -7,9 +7,6 @@ import { AuthContext } from '../context/AuthContext.jsx';
 const API_URL = `${import.meta.env.VITE_API_URL}/api/users`;
 
 const ProfilePage = () => {
-    // === THE FIX IS HERE ===
-    // Ensure 'logout' is correctly destructured from the context.
-    // The error occurs if 'logout' is missing from this line.
     const { user, login, logout } = useContext(AuthContext);
     
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);

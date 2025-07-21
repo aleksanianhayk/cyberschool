@@ -13,7 +13,9 @@ const AdminUsersPage = () => {
 
     const fetchUsers = async () => {
         try {
-            const res = await axios.get(API_URL);
+            const token = localStorage.getItem('cyberstorm_token');
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            const res = await axios.get(API_URL, config);
             setUsers(res.data);
         } catch (err) {
             setError('Failed to fetch users.');
@@ -21,17 +23,20 @@ const AdminUsersPage = () => {
     };
 
     useEffect(() => {
-        fetchUsers();
-    }, []);
+        if (adminUser) { // Only fetch if admin is logged in
+            fetchUsers();
+        }
+    }, [adminUser]);
 
     const handleRoleUpdate = async (userId, newRole) => {
         const action = newRole === 'admin' ? 'make this user an admin' : 'remove admin privileges from this user';
         if (window.confirm(`Are you sure you want to ${action}?`)) {
             try {
-                await axios.put(`${API_URL}/${userId}/role`, {
-                    role: newRole,
-                    adminUserId: adminUser.id
-                });
+                const token = localStorage.getItem('cyberstorm_token');
+                await axios.put(`${API_URL}/${userId}/role`, 
+                    { role: newRole, adminUserId: adminUser.id },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                );
                 fetchUsers();
             } catch (err) {
                 alert(err.response?.data?.message || 'Failed to update role.');
@@ -42,7 +47,9 @@ const AdminUsersPage = () => {
     const handleDelete = async (userIdToDelete) => {
         if (window.confirm('Are you sure you want to permanently delete this user?')) {
             try {
+                const token = localStorage.getItem('cyberstorm_token');
                 await axios.delete(`${API_URL}/${userIdToDelete}`, {
+                    headers: { Authorization: `Bearer ${token}` },
                     data: { adminUserId: adminUser.id }
                 });
                 fetchUsers();
@@ -73,7 +80,6 @@ const AdminUsersPage = () => {
                             const targetIsAdmin = user.role === 'admin';
                             const targetIsSuperAdmin = user.role === 'superadmin';
 
-                            // Determine which actions are allowed
                             const canEditRole = isSuperAdmin && !targetIsSuperAdmin && user.id !== adminUser.id;
                             const canDelete = (isSuperAdmin && !targetIsSuperAdmin && user.id !== adminUser.id) || (isAdmin && !targetIsAdmin && !targetIsSuperAdmin);
 

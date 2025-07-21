@@ -1,9 +1,33 @@
 // /frontend/src/pages/AdminCourseEditorPage.jsx
 
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import AdminComponentEditor from '../components/AdminComponentEditor';
+import { AuthContext } from '../context/AuthContext.jsx';
+
+const API_URL = `${import.meta.env.VITE_API_URL}/api/admin`;
+
+// --- Reusable Modals ---
+const ConfirmationModal = ({ message, onConfirm, onCancel }) => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-sm text-center">
+            <p className="text-gray-800 text-lg mb-6">{message}</p>
+            <div className="flex justify-center gap-4">
+                <button onClick={onCancel} className="px-6 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Չեղարկել</button>
+                <button onClick={onConfirm} className="px-6 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700">Հաստատել</button>
+            </div>
+        </div>
+    </div>
+);
+
+const Notification = ({ message, type, onDismiss }) => (
+    <div className={`fixed bottom-5 right-5 p-4 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+        {message}
+        <button onClick={onDismiss} className="ml-4 font-bold">X</button>
+    </div>
+);
+
 
 const AdminCourseEditorPage = () => {
     const { courseIdString } = useParams();
@@ -11,11 +35,13 @@ const AdminCourseEditorPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [activeView, setActiveView] = useState({ type: 'course_details' });
+    const { user } = useContext(AuthContext);
 
     const fetchCourseData = async () => {
         try {
             setLoading(true);
-            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/courses/${courseIdString}`);
+            const token = localStorage.getItem('cyberstorm_token');
+            const res = await axios.get(`${API_URL}/courses/${courseIdString}`, { headers: { Authorization: `Bearer ${token}` } });
             setCourse(res.data);
         } catch (err) {
             setError('Could not load course data.');
@@ -25,12 +51,15 @@ const AdminCourseEditorPage = () => {
     };
 
     useEffect(() => {
-        fetchCourseData();
-    }, [courseIdString]);
+        if (user) {
+            fetchCourseData();
+        }
+    }, [courseIdString, user]);
 
     const handleAddNewPage = async () => {
         try {
-            const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/admin/pages`, { course_id: course.id });
+            const token = localStorage.getItem('cyberstorm_token');
+            const res = await axios.post(`${API_URL}/pages`, { course_id: course.id }, { headers: { Authorization: `Bearer ${token}` } });
             const newPage = res.data;
             setCourse(prevCourse => ({
                 ...prevCourse,
@@ -38,7 +67,7 @@ const AdminCourseEditorPage = () => {
             }));
             setActiveView({ type: 'page', id: newPage.id });
         } catch (err) {
-            alert('Failed to create a new page.');
+            setError('Failed to create a new page.');
         }
     };
 
@@ -58,13 +87,20 @@ const AdminCourseEditorPage = () => {
         }));
     };
 
+    const handlePageDeleted = (deletedPageId) => {
+        setCourse(prevCourse => ({
+            ...prevCourse,
+            pages: prevCourse.pages.filter(page => page.id !== deletedPageId)
+        }));
+        setActiveView({ type: 'course_details' });
+    };
+
     if (loading) return <div className="p-10">Բեռնվում է...</div>;
     if (error) return <div className="p-10 text-red-500">{error}</div>;
-    if (!course) return <div className="p-10">Դասընթացը չի գտնվել։</div>
+    if (!course) return <div className="p-10">Դասընթացը չի գտնվել։</div>;
 
     return (
         <div className="flex h-screen bg-gray-100">
-            {/* Sidebar */}
             <aside className="w-80 bg-white shadow-lg flex flex-col h-full">
                 <div className="p-4 border-b">
                     <Link to="/admin/courses" className="text-sm text-indigo-600 hover:underline">← Բոլոր դասընթացները</Link>
@@ -89,10 +125,9 @@ const AdminCourseEditorPage = () => {
                 </div>
             </aside>
 
-            {/* Main Content Area */}
             <main className="flex-1 p-10 overflow-y-auto bg-gray-200">
                 {activeView.type === 'course_details' && <CourseDetailsView course={course} onUpdate={updateCourseDetails} />}
-                {activeView.type === 'page' && <PageView page={course.pages.find(p => p.id === activeView.id)} onUpdate={updatePageComponent} />}
+                {activeView.type === 'page' && <PageView page={course.pages.find(p => p.id === activeView.id)} onUpdate={updatePageComponent} onPageDeleted={handlePageDeleted} />}
             </main>
         </div>
     );
@@ -101,6 +136,7 @@ const AdminCourseEditorPage = () => {
 const CourseDetailsView = ({ course, onUpdate }) => {
     const [details, setDetails] = useState(course);
     const [sections, setSections] = useState([]);
+    const [notification, setNotification] = useState(null);
 
     useEffect(() => {
         setDetails(course);
@@ -109,7 +145,8 @@ const CourseDetailsView = ({ course, onUpdate }) => {
     useEffect(() => {
         const fetchSections = async () => {
             try {
-                const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/sections`);
+                const token = localStorage.getItem('cyberstorm_token');
+                const res = await axios.get(`${API_URL}/sections`, { headers: { Authorization: `Bearer ${token}` } });
                 setSections(res.data);
             } catch (err) {
                 console.error("Could not fetch sections for editor");
@@ -128,10 +165,11 @@ const CourseDetailsView = ({ course, onUpdate }) => {
 
     const handleSave = async () => {
         try {
-            await axios.put(`${import.meta.env.VITE_API_URL}/api/admin/courses/${details.id}`, details);
-            alert('Դասընթացի մանրամասները հաջողությամբ պահպանվեցին։');
+            const token = localStorage.getItem('cyberstorm_token');
+            await axios.put(`${API_URL}/courses/${details.id}`, details, { headers: { Authorization: `Bearer ${token}` } });
+            setNotification({ type: 'success', message: 'Դասընթացի մանրամասները հաջողությամբ պահպանվեցին։' });
         } catch (err) {
-            alert(err.response?.data?.message || 'Դասընթացը պահպանել չհաջողվեց։');
+            setNotification({ type: 'error', message: err.response?.data?.message || 'Դասընթացը պահպանել չհաջողվեց։' });
         }
     };
 
@@ -174,20 +212,18 @@ const CourseDetailsView = ({ course, onUpdate }) => {
                     <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">Պահպանել փոփոխությունները</button>
                 </div>
             </div>
+            {notification && <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification(null)} />}
         </div>
     );
 };
 
-const PageView = ({ page, onUpdate }) => {
+const PageView = ({ page, onUpdate, onPageDeleted }) => {
     if (!page) return null;
+    const [notification, setNotification] = useState(null);
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     const handleAddComponent = (componentType) => {
-        const newComponent = {
-            id: `temp-${Date.now()}`, 
-            component_type: componentType,
-            props: {}
-        };
-        // === FIX #1: Add a safeguard to ensure page.components is an array ===
+        const newComponent = { id: `temp-${Date.now()}`, component_type: componentType, props: {} };
         onUpdate(page.id, [...(page.components || []), newComponent]);
     };
 
@@ -203,25 +239,23 @@ const PageView = ({ page, onUpdate }) => {
 
     const handleSavePage = async () => {
         try {
-            await axios.put(`${import.meta.env.VITE_API_URL}/api/admin/pages/${page.id}/components`, {
-                components: page.components || [] // Ensure we send an array
-            });
-            alert('Էջը հաջողությամբ պահպանվեց։');
+            const token = localStorage.getItem('cyberstorm_token');
+            await axios.put(`${API_URL}/pages/${page.id}/components`, { components: page.components || [] }, { headers: { Authorization: `Bearer ${token}` } });
+            setNotification({ type: 'success', message: 'Էջը հաջողությամբ պահպանվեց։' });
         } catch (err) {
-            alert('Էջը պահպանել չհաջողվեց։');
+            setNotification({ type: 'error', message: 'Էջը պահպանել չհաջողվեց։' });
         }
     };
 
-      // === NEW FUNCTION TO HANDLE DELETING THE PAGE ===
     const handleDeletePage = async () => {
-        if (window.confirm(`Վստա՞հ եք, որ ուզում եք ջնջել Էջ ${page.page_number}-ը։`)) {
-            try {
-                await axios.delete(`${import.meta.env.VITE_API_URL}/api/admin/pages/${page.id}`);
-                alert('Էջը հաջողությամբ ջնջվեց։');
-                onPageDeleted(page.id);
-            } catch (err) {
-                alert('Էջը ջնջել չհաջողվեց։');
-            }
+        try {
+            const token = localStorage.getItem('cyberstorm_token');
+            await axios.delete(`${API_URL}/pages/${page.id}`, { headers: { Authorization: `Bearer ${token}` } });
+            onPageDeleted(page.id);
+        } catch (err) {
+            setNotification({ type: 'error', message: 'Էջը ջնջել չհաջողվեց։' });
+        } finally {
+            setDeleteTarget(null);
         }
     };
 
@@ -231,7 +265,7 @@ const PageView = ({ page, onUpdate }) => {
                 <h1 className="text-2xl font-bold">Էջ {page.page_number} - ի խմբագրում</h1>
                 <div>
                     <button onClick={handleSavePage} className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 mr-4">Պահպանել էջը</button>
-                    <button onClick={handleDeletePage} className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700">Ջնջել էջը</button>
+                    <button onClick={() => setDeleteTarget(page)} className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700">Ջնջել էջը</button>
                 </div>
             </div>
 
@@ -249,6 +283,15 @@ const PageView = ({ page, onUpdate }) => {
             <div className="mt-6 border-t-2 border-dashed pt-6">
                 <AddComponentMenu onSelect={handleAddComponent} />
             </div>
+
+            {notification && <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification(null)} />}
+            {deleteTarget && (
+                <ConfirmationModal 
+                    message={`Վստա՞հ եք, որ ուզում եք ջնջել Էջ ${deleteTarget.page_number}-ը։`}
+                    onConfirm={handleDeletePage}
+                    onCancel={() => setDeleteTarget(null)}
+                />
+            )}
         </div>
     );
 };

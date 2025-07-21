@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext.jsx';
 
 const API_URL = `${import.meta.env.VITE_API_URL}/api/meetups`;
@@ -15,10 +15,18 @@ const MeetupDetailPage = () => {
     const [newComment, setNewComment] = useState('');
 
     const fetchMeetup = async () => {
+        if (!user) return;
         try {
-            const res = await axios.get(`${API_URL}/${meetupIdString}`, {
-                params: { userId: user?.id }
-            });
+            // === THE FIX IS HERE ===
+            // Get the token from localStorage and create the authorization header
+            const token = localStorage.getItem('cyberstorm_token');
+            const config = {
+                headers: { Authorization: `Bearer ${token}` },
+                params: { userId: user.id }
+            };
+
+            // Use the config object with the request
+            const res = await axios.get(`${API_URL}/${meetupIdString}`, config);
             setMeetup(res.data);
         } catch (error) {
             console.error("Failed to fetch meetup", error);
@@ -28,15 +36,17 @@ const MeetupDetailPage = () => {
     };
 
     useEffect(() => {
-        if (user) { // Only fetch if user is loaded
-            fetchMeetup();
-        }
+        fetchMeetup();
     }, [meetupIdString, user]);
 
     const handleRegister = async () => {
         try {
-            await axios.post(`${API_URL}/register`, { userId: user.id, meetupId: meetup.id });
-            fetchMeetup(); // Re-fetch to update registration status and get join link
+            const token = localStorage.getItem('cyberstorm_token');
+            await axios.post(`${API_URL}/register`, 
+                { userId: user.id, meetupId: meetup.id },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            fetchMeetup(); // Re-fetch to update registration status
         } catch (error) {
             alert(error.response?.data?.message || "Registration failed.");
         }
@@ -46,10 +56,11 @@ const MeetupDetailPage = () => {
         e.preventDefault();
         if (!newComment.trim()) return;
         try {
-            const res = await axios.post(`${API_URL}/${meetup.id}/comments`, {
-                userId: user.id,
-                comment_text: newComment
-            });
+            const token = localStorage.getItem('cyberstorm_token');
+            const res = await axios.post(`${API_URL}/${meetup.id}/comments`, 
+                { userId: user.id, comment_text: newComment },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
             setMeetup(prev => ({ ...prev, comments: [res.data, ...prev.comments] }));
             setNewComment('');
         } catch (error) {
@@ -64,13 +75,11 @@ const MeetupDetailPage = () => {
 
     return (
         <div className="max-w-4xl mx-auto p-6 md:p-10">
-            {/* Header */}
             <h1 className="text-4xl font-bold text-gray-800">{meetup.title}</h1>
             <p className="text-lg text-gray-500 mt-2">
                 {new Date(meetup.meetup_datetime).toLocaleString('hy-AM', { dateStyle: 'full', timeStyle: 'short' })}
             </p>
 
-            {/* Video or Image */}
             <div className="my-8">
                 {meetup.video_url ? (
                     <div className="aspect-video rounded-lg overflow-hidden shadow-lg">
@@ -81,7 +90,6 @@ const MeetupDetailPage = () => {
                 )}
             </div>
 
-            {/* Action Buttons */}
             {isUpcoming && (
                 <div className="bg-white p-6 rounded-lg shadow-md mb-8">
                     {meetup.isRegistered ? (
@@ -96,7 +104,6 @@ const MeetupDetailPage = () => {
                 </div>
             )}
 
-            {/* Description & Speakers */}
             <div className="bg-white p-8 rounded-lg shadow-md mb-8">
                 <h2 className="text-2xl font-bold mb-4">Նկարագրություն</h2>
                 <p className="text-gray-700 whitespace-pre-wrap">{meetup.description}</p>
@@ -112,7 +119,6 @@ const MeetupDetailPage = () => {
                 </div>
             </div>
 
-            {/* Comments Section */}
             <div className="bg-white p-8 rounded-lg shadow-md">
                 <h2 className="text-2xl font-bold mb-6">Մեկնաբանություններ</h2>
                 <form onSubmit={handlePostComment} className="flex gap-4 mb-8">
