@@ -45,14 +45,14 @@ const ProtectedRoute = ({ children }) => {
 // Admin-specific protected route: checks if user has 'admin' role
 // Admin-specific protected route: checks if user has 'admin' or 'superadmin' role
 const AdminProtectedRoute = ({ children }) => {
-    const { user } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
 
-    if (user && user.role !== 'admin' && user.role !== 'superadmin') {
-        // If logged in but not an admin of any kind, redirect to learn page
-        return <Navigate to="/learn" replace />;
-    }
+  if (user && (user.role !== "admin" || user.role !== "superadmin")) {
+    // If logged in but not an admin of any kind, redirect to learn page
+    return <Navigate to="/learn" replace />;
+  }
 
-    return children;
+  return children;
 };
 
 function App() {
@@ -62,21 +62,34 @@ function App() {
         <div className="bg-gray-50 min-h-screen text-gray-800">
           <Routes>
             <Route path="/authentication" element={<AuthenticationPage />} />
-            
-            <Route path="/" element={<ProtectedRoute><UserLayout /></ProtectedRoute>}>
+
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <UserLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<Navigate to="/learn" replace />} />
               <Route path="learn" element={<LearnPage />} />
-              <Route path="learn/course/:courseIdString" element={<CoursePage />} />
+              <Route
+                path="learn/course/:courseIdString"
+                element={<CoursePage />}
+              />
               <Route path="meetups" element={<MeetupsListPage />} />
-              <Route path="meetups/:meetupIdString" element={<MeetupDetailPage />} />
+              <Route
+                path="meetups/:meetupIdString"
+                element={<MeetupDetailPage />}
+              />
               <Route path="ask-ai" element={<AskAiPage />} />
               <Route path="profile" element={<ProfilePage />} />
               <Route path="teacher-guide" element={<TeacherGuidePage />} />
             </Route>
 
             {/* --- Admin Routes now have two layers of protection --- */}
-            <Route 
-              path="/admin" 
+            <Route
+              path="/admin"
               element={
                 <ProtectedRoute>
                   <AdminProtectedRoute>
@@ -87,14 +100,19 @@ function App() {
             >
               <Route index element={<Navigate to="courses" replace />} />
               <Route path="courses" element={<AdminCoursesListPage />} />
-              <Route path="courses/:courseIdString" element={<AdminCourseEditorPage />} />
+              <Route
+                path="courses/:courseIdString"
+                element={<AdminCourseEditorPage />}
+              />
               <Route path="meetups" element={<AdminMeetupsListPage />} />
               <Route path="meetups/new" element={<AdminMeetupEditorPage />} />
-              <Route path="meetups/:meetupIdString" element={<AdminMeetupEditorPage />} />
+              <Route
+                path="meetups/:meetupIdString"
+                element={<AdminMeetupEditorPage />}
+              />
               <Route path="teacher-guide" element={<AdminTeacherGuidePage />} />
               <Route path="users" element={<AdminUsersPage />} />
             </Route>
-            
           </Routes>
         </div>
       </Router>
