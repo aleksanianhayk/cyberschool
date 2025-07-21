@@ -9,6 +9,8 @@ const bcrypt = require("bcryptjs");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
+const jwt = require('jsonwebtoken');
+
 
 dotenv.config();
 
@@ -102,7 +104,7 @@ app.post("/api/login/2fa/verify", async (req, res) => {
     }
 });
 
-app.post("/api/users/change-password", async (req, res) => {
+app.post("/api/users/change-password",verifyToken, async (req, res) => {
     try {
         const { userId, oldPassword, newPassword } = req.body;
         if (!userId || !oldPassword || !newPassword) return res.status(400).json({ message: "All fields are required." });
@@ -121,7 +123,7 @@ app.post("/api/users/change-password", async (req, res) => {
     }
 });
 
-app.post("/api/users/2fa/generate", async (req, res) => {
+app.post("/api/users/2fa/generate",verifyToken, async (req, res) => {
     try {
         const { userId } = req.body;
         const secret = speakeasy.generateSecret({ name: `CyberStorm (${userId})` });
@@ -134,7 +136,7 @@ app.post("/api/users/2fa/generate", async (req, res) => {
     }
 });
 
-app.post("/api/users/2fa/verify", async (req, res) => {
+app.post("/api/users/2fa/verify", verifyToken, async (req, res) => {
     try {
         const { userId, token } = req.body;
         const [userRows] = await db.query("SELECT two_factor_secret FROM users WHERE id = ?", [userId]);
@@ -152,7 +154,7 @@ app.post("/api/users/2fa/verify", async (req, res) => {
     }
 });
 
-app.post("/api/users/2fa/disable", async (req, res) => {
+app.post("/api/users/2fa/disable",verifyToken, async (req, res) => {
     try {
         const { userId } = req.body;
         await db.query("UPDATE users SET is_two_factor_enabled = FALSE, two_factor_secret = NULL WHERE id = ?", [userId]);
@@ -356,6 +358,7 @@ app.get("/api/teacher-guide", async (req, res) => {
 // ===================================================================
 // === ADMIN PANEL APIS ==============================================
 // ===================================================================
+app.use('/api/admin', verifyToken, isAdminOrSuperAdmin);
 
 // --- User Management ---
 app.get("/api/admin/users", async (req, res) => {
@@ -708,41 +711,44 @@ app.delete("/api/admin/teacher-guide/:id", async (req, res) => {
 
 
 // ===================================================================
-// === MIDDLEWARE for Admin Protection ===============================
+// === NEW JWT MIDDLEWARE ============================================
 // ===================================================================
-// Middleware to check if the user is an admin OR a superadmin
-const isAdminOrSuperAdmin = async (req, res, next) => {
-    const { adminUserId } = req.body;
-    if (!adminUserId) return res.status(401).json({ message: "Authentication required." });
-    try {
-        const [userRows] = await db.query("SELECT role FROM users WHERE id = ?", [adminUserId]);
-        const userRole = userRows[0]?.role;
-        if (userRole === 'admin' || userRole === 'superadmin') {
-            req.userRole = userRole; // Pass the role to the next function
-            next();
-        } else {
-            return res.status(403).json({ message: "Access denied. Admin privileges required." });
+
+const verifyToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+        return res.sendStatus(401); // Unauthorized
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.sendStatus(403); // Forbidden (invalid token)
         }
-    } catch (error) {
-        res.status(500).json({ message: "Server error during authorization." });
+        req.user = user; // Add the decoded user payload to the request object
+        next();
+    });
+};
+
+const isSuperAdmin = (req, res, next) => {
+    if (req.user && req.user.role === 'superadmin') {
+        next();
+    } else {
+        res.status(403).json({ message: "Access denied. Super Admin privileges required." });
     }
 };
-const isSuperAdmin = async (req, res, next) => {
-    const { adminUserId } = req.body;
-    if (!adminUserId) return res.status(401).json({ message: "Authentication required." });
-    try {
-        const [userRows] = await db.query("SELECT role FROM users WHERE id = ?", [adminUserId]);
-        if (userRows.length === 0 || userRows[0].role !== 'superadmin') {
-            return res.status(403).json({ message: "Access denied. Super Admin privileges required." });
-        }
+
+const isAdminOrSuperAdmin = (req, res, next) => {
+    if (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin')) {
         next();
-    } catch (error) {
-        res.status(500).json({ message: "Server error during authorization." });
+    } else {
+        res.status(403).json({ message: "Access denied. Admin privileges required." });
     }
 };
 
 // === NEW ENDPOINT to update a user's role (protected by isAdmin middleware) ===
-app.put("/api/admin/users/:id/role", isSuperAdmin, async (req, res) => {
+app.put("/api/admin/users/:id/role", verifyToken, isSuperAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { role } = req.body;
@@ -763,7 +769,7 @@ app.put("/api/admin/users/:id/role", isSuperAdmin, async (req, res) => {
 });
 
 
-app.delete("/api/admin/users/:id", isAdminOrSuperAdmin, async (req, res) => {
+app.delete("/api/admin/users/:id",verifyToken, isAdminOrSuperAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const adminRole = req.userRole; // Get the admin's role from the middleware
