@@ -6,6 +6,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import { AuthProvider, AuthContext } from "./context/AuthContext.jsx";
 
@@ -21,20 +22,36 @@ import AskAiPage from "./pages/AskAiPage";
 import ProfilePage from "./pages/ProfilePage";
 import MeetupsListPage from "./pages/MeetupsListPage";
 import MeetupDetailPage from "./pages/MeetupDetailPage";
-import TeacherGuidePage from "./pages/TeacherGuidePage"; // New
+import TeacherGuidePage from "./pages/TeacherGuidePage";
 import AdminCoursesListPage from "./pages/AdminCoursesListPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
 import AdminCourseEditorPage from "./pages/AdminCourseEditorPage";
 import AdminMeetupsListPage from "./pages/AdminMeetupsListPage";
 import AdminMeetupEditorPage from "./pages/AdminMeetupEditorPage";
-import AdminTeacherGuidePage from "./pages/AdminTeacherGuidePage"; // New
+import AdminTeacherGuidePage from "./pages/AdminTeacherGuidePage";
 
+// General protected route: checks if user is logged in
 const ProtectedRoute = ({ children }) => {
   const { user } = useContext(AuthContext);
+  const location = useLocation();
+
   if (!user) {
-    return <Navigate to="/authentication" />;
+    // If not logged in, redirect to auth page, remembering where they came from
+    return <Navigate to="/authentication" state={{ from: location }} replace />;
   }
   return children;
+};
+
+// Admin-specific protected route: checks if user has 'admin' role
+const AdminProtectedRoute = ({ children }) => {
+    const { user } = useContext(AuthContext);
+
+    if (user && user.role !== 'admin') {
+        // If logged in but not an admin, redirect them to the learn page
+        return <Navigate to="/learn" replace />;
+    }
+
+    return children;
 };
 
 function App() {
@@ -43,10 +60,8 @@ function App() {
       <Router>
         <div className="bg-gray-50 min-h-screen text-gray-800">
           <Routes>
-            {/* --- Standalone Routes --- */}
             <Route path="/authentication" element={<AuthenticationPage />} />
             
-            {/* --- User Routes using the UserLayout --- */}
             <Route path="/" element={<ProtectedRoute><UserLayout /></ProtectedRoute>}>
               <Route index element={<Navigate to="/learn" replace />} />
               <Route path="learn" element={<LearnPage />} />
@@ -58,8 +73,17 @@ function App() {
               <Route path="teacher-guide" element={<TeacherGuidePage />} />
             </Route>
 
-            {/* --- Admin Routes using the AdminLayout --- */}
-            <Route path="/admin" element={<ProtectedRoute><AdminLayout /></ProtectedRoute>}>
+            {/* --- Admin Routes now have two layers of protection --- */}
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute>
+                  <AdminProtectedRoute>
+                    <AdminLayout />
+                  </AdminProtectedRoute>
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<Navigate to="courses" replace />} />
               <Route path="courses" element={<AdminCoursesListPage />} />
               <Route path="courses/:courseIdString" element={<AdminCourseEditorPage />} />
