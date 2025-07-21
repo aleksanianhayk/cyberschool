@@ -281,21 +281,34 @@ app.get("/api/meetups/:meetupIdString", async (req, res) => {
         }
         if (!isRegistered) delete meetup.join_url;
 
-        // === THIS SQL QUERY IS NOW FIXED AND MORE ROBUST ===
         const [suggestedCourses] = await db.query(`
             SELECT 
-                c.id, c.title, c.description, c.image_url, c.course_id_string, COUNT(p.id) as page_count 
+                c.id, c.title, c.description, c.image_url, c.course_id_string, 
+                (SELECT COUNT(*) FROM pages p WHERE p.course_id = c.id) as page_count
             FROM meetup_suggested_courses msc
             JOIN courses c ON msc.course_id = c.id 
-            LEFT JOIN pages p ON c.id = p.course_id 
-            WHERE msc.meetup_id = ? AND c.is_active = true 
-            GROUP BY c.id, c.title, c.description, c.image_url, c.course_id_string
+            WHERE msc.meetup_id = ? AND c.is_active = true
         `, [meetup.id]);
 
         res.status(200).json({ ...meetup, speakers, comments, isRegistered, suggestedCourses });
     } catch (error) {
         console.error("Error fetching meetup details:", error);
         res.status(500).json({ message: "Failed to fetch meetup details." });
+    }
+});
+// === THIS IS THE MISSING ENDPOINT THAT IS NOW RESTORED ===
+app.get("/api/progress/:userId/:courseId", async (req, res) => {
+    try {
+        const { userId, courseId } = req.params;
+        const [progressRows] = await db.query(
+            "SELECT highest_page_index FROM user_progress WHERE user_id = ? AND course_id = ?",
+            [userId, courseId]
+        );
+        const highestPageIndex = progressRows.length > 0 ? progressRows[0].highest_page_index : -1;
+        res.status(200).json({ highestPageIndex });
+    } catch (error) {
+        console.error("Error fetching progress:", error);
+        res.status(500).json({ message: "Failed to fetch progress." });
     }
 });
 
