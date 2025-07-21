@@ -12,7 +12,8 @@ const qrcode = require('qrcode');
 dotenv.config();
 
 const app = express();
-app.use(cors({ origin: "https://cyberschool.space" }));app.use(express.json());
+app.use(cors({ origin: process.env.CORS_ORIGIN }));
+app.use(express.json());
 
 // --- Database Connection ---
 const db = mysql.createPool({
@@ -262,8 +263,10 @@ app.get("/api/meetups/:meetupIdString", async (req, res) => {
             isRegistered = regRows.length > 0;
         }
         if (!isRegistered) delete meetup.join_url;
-        res.status(200).json({ ...meetup, speakers, comments, isRegistered });
+        const [suggestedCourses] = await db.query(`SELECT c.id, c.title, c.description, c.image_url, c.course_id_string, COUNT(p.id) as page_count FROM meetup_suggested_courses msc JOIN courses c ON msc.course_id = c.id LEFT JOIN pages p ON c.id = p.course_id WHERE msc.meetup_id = ? AND c.is_active = true GROUP BY c.id`, [meetup.id]);
+        res.status(200).json({ ...meetup, speakers, comments, isRegistered, suggestedCourses });
     } catch (error) {
+        console.error("Error fetching meetup details:", error);
         res.status(500).json({ message: "Failed to fetch meetup details." });
     }
 });
@@ -291,22 +294,11 @@ app.post("/api/meetups/:meetupId/comments", async (req, res) => {
     }
 });
 
-// --- NEW: TEACHER'S GUIDE API ---
-
-// Get the full, nested teacher's guide for display
 app.get("/api/teacher-guide", async (req, res) => {
     try {
         const [flatList] = await db.query("SELECT * FROM teacher_guide_content ORDER BY parent_id ASC, order_index ASC");
-
-        // Helper function to build the nested tree structure
-        const buildTree = (list, parentId = null) => {
-            return list
-                .filter(item => item.parent_id === parentId)
-                .map(item => ({ ...item, children: buildTree(list, item.id) }));
-        };
-
-        const nestedGuide = buildTree(flatList);
-        res.status(200).json(nestedGuide);
+        const buildTree = (list, parentId = null) => list.filter(item => item.parent_id === parentId).map(item => ({ ...item, children: buildTree(list, item.id) }));
+        res.status(200).json(buildTree(flatList));
     } catch (error) {
         console.error("Error fetching teacher guide:", error);
         res.status(500).json({ message: "Failed to fetch teacher guide." });
