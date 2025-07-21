@@ -43,11 +43,12 @@ const ProtectedRoute = ({ children }) => {
 };
 
 // Admin-specific protected route: checks if user has 'admin' role
+// Admin-specific protected route: checks if user has 'admin' or 'superadmin' role
 const AdminProtectedRoute = ({ children }) => {
     const { user } = useContext(AuthContext);
 
-    if (user && user.role !== 'admin') {
-        // If logged in but not an admin, redirect them to the learn page
+    if (user && user.role !== 'admin' && user.role !== 'superadmin') {
+        // If logged in but not an admin of any kind, redirect to learn page
         return <Navigate to="/learn" replace />;
     }
 

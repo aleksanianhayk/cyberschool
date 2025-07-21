@@ -710,32 +710,48 @@ app.delete("/api/admin/teacher-guide/:id", async (req, res) => {
 // ===================================================================
 // === MIDDLEWARE for Admin Protection ===============================
 // ===================================================================
-const isAdmin = async (req, res, next) => {
-    // In a real-world app with JWT, you'd verify the token here.
-    // For now, we'll check the user ID sent in the request body.
-    const { adminUserId } = req.body; // We'll expect the frontend to send the admin's ID
-    if (!adminUserId) {
-        return res.status(401).json({ message: "Authentication required." });
-    }
+// Middleware to check if the user is an admin OR a superadmin
+const isAdminOrSuperAdmin = async (req, res, next) => {
+    const { adminUserId } = req.body;
+    if (!adminUserId) return res.status(401).json({ message: "Authentication required." });
     try {
         const [userRows] = await db.query("SELECT role FROM users WHERE id = ?", [adminUserId]);
-        if (userRows.length === 0 || userRows[0].role !== 'admin') {
+        const userRole = userRows[0]?.role;
+        if (userRole === 'admin' || userRole === 'superadmin') {
+            req.userRole = userRole; // Pass the role to the next function
+            next();
+        } else {
             return res.status(403).json({ message: "Access denied. Admin privileges required." });
         }
-        next(); // User is an admin, proceed.
+    } catch (error) {
+        res.status(500).json({ message: "Server error during authorization." });
+    }
+};
+const isSuperAdmin = async (req, res, next) => {
+    const { adminUserId } = req.body;
+    if (!adminUserId) return res.status(401).json({ message: "Authentication required." });
+    try {
+        const [userRows] = await db.query("SELECT role FROM users WHERE id = ?", [adminUserId]);
+        if (userRows.length === 0 || userRows[0].role !== 'superadmin') {
+            return res.status(403).json({ message: "Access denied. Super Admin privileges required." });
+        }
+        next();
     } catch (error) {
         res.status(500).json({ message: "Server error during authorization." });
     }
 };
 
 // === NEW ENDPOINT to update a user's role (protected by isAdmin middleware) ===
-app.put("/api/admin/users/:id/role", isAdmin, async (req, res) => {
+app.put("/api/admin/users/:id/role", isSuperAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { role } = req.body;
 
-        if (!role) {
-            return res.status(400).json({ message: "Role is required." });
+        if (!role) return res.status(400).json({ message: "Role is required." });
+
+        // Prevent a superadmin from demoting themselves
+        if (id == req.body.adminUserId && role !== 'superadmin') {
+            return res.status(403).json({ message: "Cannot remove your own super admin privileges." });
         }
 
         await db.query("UPDATE users SET role = ? WHERE id = ?", [role, id]);
@@ -747,11 +763,26 @@ app.put("/api/admin/users/:id/role", isAdmin, async (req, res) => {
 });
 
 
-app.delete("/api/admin/users/:id", async (req, res) => {
+app.delete("/api/admin/users/:id", isAdminOrSuperAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const [result] = await db.query("DELETE FROM users WHERE id = ?", [id]);
-        if (result.affectedRows === 0) return res.status(404).json({ message: "User not found." });
+        const adminRole = req.userRole; // Get the admin's role from the middleware
+
+        // Get the role of the user to be deleted
+        const [targetUserRows] = await db.query("SELECT role FROM users WHERE id = ?", [id]);
+        if (targetUserRows.length === 0) return res.status(404).json({ message: "User not found." });
+        
+        const targetUserRole = targetUserRows[0].role;
+
+        // Enforce security rules
+        if (targetUserRole === 'superadmin') {
+            return res.status(403).json({ message: "Super admins cannot be deleted." });
+        }
+        if (adminRole === 'admin' && targetUserRole === 'admin') {
+            return res.status(403).json({ message: "Admins cannot delete other admins." });
+        }
+
+        await db.query("DELETE FROM users WHERE id = ?", [id]);
         res.status(200).json({ message: "User deleted successfully." });
     } catch (error) {
         res.status(500).json({ message: "Database error." });

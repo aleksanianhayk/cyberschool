@@ -9,7 +9,7 @@ const API_URL = `${import.meta.env.VITE_API_URL}/api/admin/users`;
 const AdminUsersPage = () => {
     const [users, setUsers] = useState([]);
     const [error, setError] = useState('');
-    const { user: adminUser } = useContext(AuthContext); // Get the currently logged-in admin
+    const { user: adminUser } = useContext(AuthContext);
 
     const fetchUsers = async () => {
         try {
@@ -30,9 +30,9 @@ const AdminUsersPage = () => {
             try {
                 await axios.put(`${API_URL}/${userId}/role`, {
                     role: newRole,
-                    adminUserId: adminUser.id // Send admin's ID for verification
+                    adminUserId: adminUser.id
                 });
-                fetchUsers(); // Refresh the list to show the new role
+                fetchUsers();
             } catch (err) {
                 alert(err.response?.data?.message || 'Failed to update role.');
             }
@@ -42,10 +42,8 @@ const AdminUsersPage = () => {
     const handleDelete = async (userIdToDelete) => {
         if (window.confirm('Are you sure you want to permanently delete this user?')) {
             try {
-                // The backend needs the admin's ID for verification, but DELETE requests don't typically have a body.
-                // We'll send it as a query parameter instead.
                 await axios.delete(`${API_URL}/${userIdToDelete}`, {
-                    data: { adminUserId: adminUser.id } // Pass admin ID in the data payload for DELETE
+                    data: { adminUserId: adminUser.id }
                 });
                 fetchUsers();
             } catch (err) {
@@ -69,37 +67,45 @@ const AdminUsersPage = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map(user => (
-                            <tr key={user.id} className="border-b hover:bg-gray-50">
-                                <td className="px-5 py-4">{user.name}</td>
-                                <td className="px-5 py-4">{user.email}</td>
-                                <td className="px-5 py-4">
-                                    <span className={`font-semibold capitalize ${user.role === 'admin' ? 'text-indigo-600' : 'text-gray-700'}`}>
-                                        {user.role}
-                                    </span>
-                                </td>
-                                <td className="px-5 py-4 text-right space-x-4">
-                                    {user.role !== 'admin' ? (
-                                        <button onClick={() => handleRoleUpdate(user.id, 'admin')} className="text-indigo-600 hover:text-indigo-900 font-semibold">
-                                            Դարձնել ադմին
-                                        </button>
-                                    ) : (
-                                        // Option to demote an admin, but prevent self-demotion
-                                        user.id !== adminUser.id && (
+                        {users.map(user => {
+                            const isSuperAdmin = adminUser.role === 'superadmin';
+                            const isAdmin = adminUser.role === 'admin';
+                            const targetIsAdmin = user.role === 'admin';
+                            const targetIsSuperAdmin = user.role === 'superadmin';
+
+                            // Determine which actions are allowed
+                            const canEditRole = isSuperAdmin && !targetIsSuperAdmin && user.id !== adminUser.id;
+                            const canDelete = (isSuperAdmin && !targetIsSuperAdmin && user.id !== adminUser.id) || (isAdmin && !targetIsAdmin && !targetIsSuperAdmin);
+
+                            return (
+                                <tr key={user.id} className="border-b hover:bg-gray-50">
+                                    <td className="px-5 py-4">{user.name}</td>
+                                    <td className="px-5 py-4">{user.email}</td>
+                                    <td className="px-5 py-4">
+                                        <span className={`font-semibold capitalize ${targetIsSuperAdmin ? 'text-red-600' : (targetIsAdmin ? 'text-indigo-600' : 'text-gray-700')}`}>
+                                            {user.role}
+                                        </span>
+                                    </td>
+                                    <td className="px-5 py-4 text-right space-x-4">
+                                        {canEditRole && !targetIsAdmin && (
+                                            <button onClick={() => handleRoleUpdate(user.id, 'admin')} className="text-indigo-600 hover:text-indigo-900 font-semibold">
+                                                Դարձնել ադմին
+                                            </button>
+                                        )}
+                                        {canEditRole && targetIsAdmin && (
                                             <button onClick={() => handleRoleUpdate(user.id, 'student')} className="text-yellow-600 hover:text-yellow-900 font-semibold">
                                                 Հեռացնել ադմինի կարգավիճակը
                                             </button>
-                                        )
-                                    )}
-                                    {/* Prevent an admin from deleting themselves */}
-                                    {user.id !== adminUser.id && (
-                                        <button onClick={() => handleDelete(user.id)} className="text-red-600 hover:text-red-900 font-semibold">
-                                            Ջնջել
-                                        </button>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
+                                        )}
+                                        {canDelete && (
+                                            <button onClick={() => handleDelete(user.id)} className="text-red-600 hover:text-red-900 font-semibold">
+                                                Ջնջել
+                                            </button>
+                                        )}
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
