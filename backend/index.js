@@ -261,29 +261,37 @@ app.get("/api/meetups", async (req, res) => {
     }
 });
 
+// This is the corrected endpoint for /backend/index.js
+
 app.get("/api/meetups/:meetupIdString", async (req, res) => {
     try {
         const { meetupIdString } = req.params;
         const { userId } = req.query;
         const [meetupRows] = await db.query("SELECT * FROM meetups WHERE meetup_id_string = ?", [meetupIdString]);
         if (meetupRows.length === 0) return res.status(404).json({ message: "Meetup not found." });
+        
         const meetup = meetupRows[0];
         const [speakers] = await db.query("SELECT * FROM meetup_speakers WHERE meetup_id = ?", [meetup.id]);
         const [comments] = await db.query("SELECT c.*, u.name as author_name FROM meetup_comments c JOIN users u ON c.user_id = u.id WHERE c.meetup_id = ? ORDER BY c.created_at DESC", [meetup.id]);
+        
         let isRegistered = false;
         if (userId) {
             const [regRows] = await db.query("SELECT id FROM meetup_registrations WHERE user_id = ? AND meetup_id = ?", [userId, meetup.id]);
             isRegistered = regRows.length > 0;
         }
         if (!isRegistered) delete meetup.join_url;
+
+        // === THIS SQL QUERY IS NOW FIXED AND MORE ROBUST ===
         const [suggestedCourses] = await db.query(`
-            SELECT c.id, c.title, c.description, c.image_url, c.course_id_string, COUNT(p.id) as page_count 
+            SELECT 
+                c.id, c.title, c.description, c.image_url, c.course_id_string, COUNT(p.id) as page_count 
             FROM meetup_suggested_courses msc
             JOIN courses c ON msc.course_id = c.id 
             LEFT JOIN pages p ON c.id = p.course_id 
             WHERE msc.meetup_id = ? AND c.is_active = true 
-            GROUP BY c.id`, [meetup.id]
-        );
+            GROUP BY c.id, c.title, c.description, c.image_url, c.course_id_string
+        `, [meetup.id]);
+
         res.status(200).json({ ...meetup, speakers, comments, isRegistered, suggestedCourses });
     } catch (error) {
         console.error("Error fetching meetup details:", error);
