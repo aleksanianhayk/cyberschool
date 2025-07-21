@@ -10,39 +10,22 @@ const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
 
 dotenv.config();
+
 const app = express();
 
-// === THE FIX IS HERE: HARDCODED CORS ORIGINS FOR TESTING ===
-// We are temporarily removing the dependency on process.env to isolate the problem.
-const allowedOrigins = [
-    'https://www.cyberschool.space',
-    'https://cyberschool.space'
-];
-
+// --- CORS Configuration ---
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
 const corsOptions = {
     origin: (origin, callback) => {
-        // If the incoming origin is in our hardcoded list, allow it.
-        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
         }
     }
 };
-
 app.use(cors(corsOptions));
 app.use(express.json());
-
-
-// === NEW DEBUGGING CODE ===========================================
-console.log("--- DATABASE CREDENTIALS ---");
-console.log("DB_HOST:", process.env.DB_HOST);
-console.log("DB_USER:", process.env.DB_USER);
-console.log("DB_PASSWORD:", process.env.DB_PASSWORD ? "Exists" : "MISSING!");
-console.log("DB_NAME:", process.env.DB_NAME);
-console.log("DB_PORT:", process.env.DB_PORT);
-console.log("----------------------------");
-// ==================================================================
 
 // --- Database Connection ---
 const db = mysql.createPool({
@@ -60,7 +43,6 @@ const db = mysql.createPool({
 // === USER AUTHENTICATION & PROFILE APIS ============================
 // ===================================================================
 
-// User Registration
 app.post("/api/register", async (req, res) => {
     try {
         const { name, email, password, phone, gender, school_name, role, grade } = req.body;
@@ -77,7 +59,6 @@ app.post("/api/register", async (req, res) => {
     }
 });
 
-// User Login
 app.post("/api/login", async (req, res) => {
     try {
         const { identifier, password } = req.body;
@@ -98,7 +79,6 @@ app.post("/api/login", async (req, res) => {
     }
 });
 
-// 2FA Login Verification
 app.post("/api/login/2fa/verify", async (req, res) => {
     try {
         const { userId, token } = req.body;
@@ -120,7 +100,6 @@ app.post("/api/login/2fa/verify", async (req, res) => {
     }
 });
 
-// Change Password
 app.post("/api/users/change-password", async (req, res) => {
     try {
         const { userId, oldPassword, newPassword } = req.body;
@@ -140,7 +119,6 @@ app.post("/api/users/change-password", async (req, res) => {
     }
 });
 
-// Generate 2FA Secret
 app.post("/api/users/2fa/generate", async (req, res) => {
     try {
         const { userId } = req.body;
@@ -154,7 +132,6 @@ app.post("/api/users/2fa/generate", async (req, res) => {
     }
 });
 
-// Verify and Enable 2FA
 app.post("/api/users/2fa/verify", async (req, res) => {
     try {
         const { userId, token } = req.body;
@@ -173,7 +150,6 @@ app.post("/api/users/2fa/verify", async (req, res) => {
     }
 });
 
-// Disable 2FA
 app.post("/api/users/2fa/disable", async (req, res) => {
     try {
         const { userId } = req.body;
