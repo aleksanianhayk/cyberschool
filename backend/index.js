@@ -45,7 +45,6 @@ const db = mysql.createPool({
 // === USER AUTHENTICATION & PROFILE APIS ============================
 // ===================================================================
 
-// User Registration
 app.post("/api/register", async (req, res) => {
     try {
         const { name, email, password, phone, gender, school_name, role, grade } = req.body;
@@ -62,22 +61,18 @@ app.post("/api/register", async (req, res) => {
     }
 });
 
-// User Login
 app.post("/api/login", async (req, res) => {
     try {
         const { identifier, password } = req.body;
         const query = "SELECT * FROM users WHERE email = ? OR phone = ?";
         const [results] = await db.query(query, [identifier, identifier]);
         if (results.length === 0) return res.status(404).json({ message: "User not found." });
-        
         const user = results[0];
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ message: "Invalid credentials." });
-
         if (user.is_two_factor_enabled) {
             return res.status(200).json({ twoFactorRequired: true, userId: user.id });
         }
-
         const { password: _, ...userData } = user;
         res.status(200).json({ message: "Login successful!", user: userData });
     } catch (error) {
@@ -86,7 +81,6 @@ app.post("/api/login", async (req, res) => {
     }
 });
 
-// 2FA Login Verification
 app.post("/api/login/2fa/verify", async (req, res) => {
     try {
         const { userId, token } = req.body;
@@ -108,7 +102,6 @@ app.post("/api/login/2fa/verify", async (req, res) => {
     }
 });
 
-// Change Password
 app.post("/api/users/change-password", async (req, res) => {
     try {
         const { userId, oldPassword, newPassword } = req.body;
@@ -128,7 +121,6 @@ app.post("/api/users/change-password", async (req, res) => {
     }
 });
 
-// Generate 2FA Secret
 app.post("/api/users/2fa/generate", async (req, res) => {
     try {
         const { userId } = req.body;
@@ -142,7 +134,6 @@ app.post("/api/users/2fa/generate", async (req, res) => {
     }
 });
 
-// Verify and Enable 2FA
 app.post("/api/users/2fa/verify", async (req, res) => {
     try {
         const { userId, token } = req.body;
@@ -161,7 +152,6 @@ app.post("/api/users/2fa/verify", async (req, res) => {
     }
 });
 
-// Disable 2FA
 app.post("/api/users/2fa/disable", async (req, res) => {
     try {
         const { userId } = req.body;
@@ -170,23 +160,6 @@ app.post("/api/users/2fa/disable", async (req, res) => {
     } catch (error) {
         console.error("2FA disable error:", error);
         res.status(500).json({ message: "Failed to disable 2FA." });
-    }
-});
-
-
-// === THIS IS THE MISSING ENDPOINT THAT IS NOW RESTORED ===
-app.get("/api/progress/:userId/:courseId", async (req, res) => {
-    try {
-        const { userId, courseId } = req.params;
-        const [progressRows] = await db.query(
-            "SELECT highest_page_index FROM user_progress WHERE user_id = ? AND course_id = ?",
-            [userId, courseId]
-        );
-        const highestPageIndex = progressRows.length > 0 ? progressRows[0].highest_page_index : -1;
-        res.status(200).json({ highestPageIndex });
-    } catch (error) {
-        console.error("Error fetching progress:", error);
-        res.status(500).json({ message: "Failed to fetch progress." });
     }
 });
 
