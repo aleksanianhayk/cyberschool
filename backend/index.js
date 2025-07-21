@@ -263,6 +263,8 @@ app.get("/api/meetups", async (req, res) => {
 
 // This is the corrected endpoint for /backend/index.js
 
+// This is the corrected endpoint for /backend/index.js
+
 app.get("/api/meetups/:meetupIdString", async (req, res) => {
     try {
         const { meetupIdString } = req.params;
@@ -281,6 +283,7 @@ app.get("/api/meetups/:meetupIdString", async (req, res) => {
         }
         if (!isRegistered) delete meetup.join_url;
 
+        // === THIS SQL QUERY IS NOW FIXED AND MORE ROBUST ===
         const [suggestedCourses] = await db.query(`
             SELECT 
                 c.id, c.title, c.description, c.image_url, c.course_id_string, 
@@ -296,6 +299,7 @@ app.get("/api/meetups/:meetupIdString", async (req, res) => {
         res.status(500).json({ message: "Failed to fetch meetup details." });
     }
 });
+
 // === THIS IS THE MISSING ENDPOINT THAT IS NOW RESTORED ===
 app.get("/api/progress/:userId/:courseId", async (req, res) => {
     try {
