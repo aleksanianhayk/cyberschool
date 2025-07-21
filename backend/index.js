@@ -12,17 +12,24 @@ const qrcode = require('qrcode');
 dotenv.config();
 const app = express();
 
-// --- CORS Configuration ---
-const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
+// === THE FIX IS HERE: HARDCODED CORS ORIGINS FOR TESTING ===
+// We are temporarily removing the dependency on process.env to isolate the problem.
+const allowedOrigins = [
+    'https://www.cyberschool.space',
+    'https://cyberschool.space'
+];
+
 const corsOptions = {
     origin: (origin, callback) => {
-        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        // If the incoming origin is in our hardcoded list, allow it.
+        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
         }
     }
 };
+
 app.use(cors(corsOptions));
 app.use(express.json());
 
