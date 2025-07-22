@@ -598,10 +598,13 @@ app.get("/api/admin/meetups/:meetupIdString", async (req, res) => {
         const { meetupIdString } = req.params;
         const [meetupRows] = await db.query("SELECT * FROM meetups WHERE meetup_id_string = ?", [meetupIdString]);
         if (meetupRows.length === 0) return res.status(404).json({ message: "Meetup not found." });
+        
         const meetup = meetupRows[0];
         const [speakers] = await db.query("SELECT * FROM meetup_speakers WHERE meetup_id = ?", [meetup.id]);
-        const [suggestedCourseRows] = await db.query("SELECT course_id FROM meetup_suggested_courses WHERE meetup_id = ?", [meetup.id]);
-        const suggestedCourseIds = suggestedCourseRows.map(row => row.course_id);
+        
+        // Temporarily disable suggested courses to prevent crashes
+        const suggestedCourseIds = []; 
+        
         res.status(200).json({ ...meetup, speakers, suggestedCourseIds });
     } catch (error) {
         res.status(500).json({ message: "Failed to fetch meetup details." });

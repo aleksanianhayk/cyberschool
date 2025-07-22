@@ -92,6 +92,8 @@ function App() {
               <Route path="meetups/:meetupIdString" element={<AdminMeetupEditorPage />} />
               <Route path="teacher-guide" element={<AdminTeacherGuidePage />} />
               <Route path="users" element={<AdminUsersPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+
             </Route>
             
           </Routes>

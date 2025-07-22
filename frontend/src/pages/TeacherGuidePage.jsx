@@ -1,7 +1,8 @@
 // /frontend/src/pages/TeacherGuidePage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { AuthContext } from '../context/AuthContext.jsx';
 
 const API_URL = `${import.meta.env.VITE_API_URL}/api/teacher-guide`;
 
@@ -14,7 +15,7 @@ const GuideItem = ({ item }) => {
             <div className="my-4 rounded-lg bg-white shadow-sm border border-gray-200">
                 <button onClick={() => setIsOpen(!isOpen)} className="flex items-center w-full text-left p-4">
                     <h3 className="font-bold text-gray-800 flex-grow text-2xl">{item.title}</h3>
-                    <svg className={`w-5 h-5 ml-2 text-gray-500 transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className={`w-5 h-5 ml-2 text-gray-500 transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="http://www.w3.org/2000/svg" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                 </button>
@@ -42,11 +43,20 @@ const GuideItem = ({ item }) => {
 const TeacherGuidePage = () => {
     const [guideContent, setGuideContent] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { user } = useContext(AuthContext); // Get the user from context
 
     useEffect(() => {
         const fetchGuide = async () => {
+            if (!user) return; // Don't fetch if user is not logged in
             try {
-                const res = await axios.get(API_URL);
+                // Get the token from localStorage and create the authorization header
+                const token = localStorage.getItem('cyberstorm_token');
+                const config = {
+                    headers: { Authorization: `Bearer ${token}` }
+                };
+                
+                // Use the config object with the request
+                const res = await axios.get(API_URL, config);
                 setGuideContent(res.data);
             } catch (error) {
                 console.error("Failed to fetch teacher guide", error);
@@ -55,7 +65,7 @@ const TeacherGuidePage = () => {
             }
         };
         fetchGuide();
-    }, []);
+    }, [user]); // Add user as a dependency
 
     if (loading) return <p className="p-10">Բեռնվում է...</p>;
 

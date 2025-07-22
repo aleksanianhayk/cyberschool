@@ -36,7 +36,7 @@ const AdminLayout = () => {
                 </nav>
 
                 <div className="px-4 py-4 border-t">
-                    <AdminNavLink to="/profile" icon={<ProfileIcon />} label="Իմ էջը" isOpen={isSidebarOpen} />
+                    <AdminNavLink to="/admin/profile" icon={<ProfileIcon />} label="Իմ էջը" isOpen={isSidebarOpen} />
                     <button onClick={logout} className="flex items-center p-3 my-2 rounded-lg font-medium transition-colors text-red-600 hover:bg-red-100 w-full">
                         <LogoutIcon className={!isSidebarOpen && 'text-red-600'} />
                         <span className={`ml-4 whitespace-nowrap ${isSidebarOpen ? '' : 'hidden'}`}>Ելք</span>
