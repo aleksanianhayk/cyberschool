@@ -7,8 +7,7 @@ import { AuthContext } from '../context/AuthContext.jsx';
 const API_URL = `${import.meta.env.VITE_API_URL}/api/users`;
 
 const ProfilePage = () => {
-    const { user, login, logout } = useContext(AuthContext);
-    
+    const { user, updateUser, logout } = useContext(AuthContext);
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [is2faModalOpen, setIs2faModalOpen] = useState(false);
 
@@ -20,11 +19,11 @@ const ProfilePage = () => {
         if (user.is_two_factor_enabled) {
             if (window.confirm('Վստա՞հ եք, որ ուզում եք անջատել 2FA-ն։')) {
                 try {
-                    await axios.post(`${API_URL}/2fa/disable`, { userId: user.id });
-                    login({ ...user, is_two_factor_enabled: 0, two_factor_secret: null });
-                    alert('2FA-ն հաջողությամբ անջատվեց։');
+                    const token = localStorage.getItem('cyberstorm_token');
+                    await axios.post(`${API_URL}/2fa/disable`, { userId: user.id }, { headers: { Authorization: `Bearer ${token}` } });
+                    updateUser({ is_two_factor_enabled: 0 });
                 } catch (error) {
-                    alert('2FA-ն անջատել չհաջողվեց։');
+                    console.error('Failed to disable 2FA', error);
                 }
             }
         } else {
@@ -33,7 +32,7 @@ const ProfilePage = () => {
     };
 
     const on2faEnabled = () => {
-        login({ ...user, is_two_factor_enabled: 1 });
+        updateUser({ is_two_factor_enabled: 1 });
         setIs2faModalOpen(false);
     };
 
@@ -85,7 +84,7 @@ const ProfilePage = () => {
 const InfoField = ({ label, value }) => (
     <div className="bg-gray-50 p-3 rounded-md">
         <p className="text-sm font-medium text-gray-500">{label}</p>
-        <p className="text-lg text-gray-800">{value}</p>
+        <p className="text-lg text-gray-800">{value || '-'}</p>
     </div>
 );
 
@@ -98,7 +97,11 @@ const ChangePasswordModal = ({ user, onClose }) => {
         e.preventDefault();
         setMessage({ text: '', type: '' });
         try {
-            const res = await axios.post(`${API_URL}/change-password`, { userId: user.id, oldPassword, newPassword });
+            const token = localStorage.getItem('cyberstorm_token');
+            const res = await axios.post(`${API_URL}/change-password`, 
+                { oldPassword, newPassword },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
             setMessage({ text: res.data.message, type: 'success' });
         } catch (error) {
             setMessage({ text: error.response?.data?.message || 'Internal server error', type: 'error' });
@@ -131,7 +134,8 @@ const TwoFactorAuthModal = ({ user, onClose, onEnabled }) => {
 
     const handleGenerate = async () => {
         try {
-            const res = await axios.post(`${API_URL}/2fa/generate`, { userId: user.id });
+            const authToken = localStorage.getItem('cyberstorm_token');
+            const res = await axios.post(`${API_URL}/2fa/generate`, {}, { headers: { Authorization: `Bearer ${authToken}` } });
             setQrCodeUrl(res.data.qrCodeUrl);
             setStep(2);
         } catch (error) {
@@ -141,7 +145,8 @@ const TwoFactorAuthModal = ({ user, onClose, onEnabled }) => {
 
     const handleVerify = async () => {
         try {
-            const res = await axios.post(`${API_URL}/2fa/verify`, { userId: user.id, token });
+            const authToken = localStorage.getItem('cyberstorm_token');
+            const res = await axios.post(`${API_URL}/2fa/verify`, { token }, { headers: { Authorization: `Bearer ${authToken}` } });
             setMessage({ text: res.data.message, type: 'success' });
             setTimeout(() => {
                 onEnabled();

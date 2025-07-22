@@ -108,13 +108,25 @@ app.post("/api/login", async (req, res) => {
             return res.status(200).json({ twoFactorRequired: true, userId: user.id });
         }
 
-        const payload = { id: user.id, name: user.name, role: user.role };
+        // === UPDATED JWT PAYLOAD ===
+        // Include all necessary user info for the profile and UI
+        const payload = { 
+            id: user.id, 
+            name: user.name, 
+            role: user.role,
+            email: user.email,
+            phone: user.phone,
+            school_name: user.school_name,
+            grade: user.grade,
+            is_two_factor_enabled: !!user.is_two_factor_enabled
+        };
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
         res.status(200).json({ message: "Login successful!", token });
     } catch (error) {
         res.status(500).json({ message: "Database error." });
     }
 });
+
 
 app.post("/api/login/2fa/verify", async (req, res) => {
     try {
@@ -125,7 +137,17 @@ app.post("/api/login/2fa/verify", async (req, res) => {
         const user = userRows[0];
         const verified = speakeasy.totp.verify({ secret: user.two_factor_secret, encoding: 'base32', token });
         if (verified) {
-            const payload = { id: user.id, name: user.name, role: user.role };
+            // === UPDATED JWT PAYLOAD ===
+            const payload = { 
+                id: user.id, 
+                name: user.name, 
+                role: user.role,
+                email: user.email,
+                phone: user.phone,
+                school_name: user.school_name,
+                grade: user.grade,
+                is_two_factor_enabled: !!user.is_two_factor_enabled
+            };
             const jwtToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
             res.status(200).json({ message: "Login successful!", token: jwtToken });
         } else {
