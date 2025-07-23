@@ -104,8 +104,8 @@ const EditableGuideItem = ({ item, onUpdate, onDelete, onAddChild, newlyCreatedI
                     )}
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
-                    {item.content_type === 'dropdown' && !isEditingTitle && (<button onClick={() => setIsEditingTitle(true)} className="text-sm text-indigo-600 font-semibold">Խմբագրել Վերնագիրը</button>)}
-                    {item.content_type === 'text' && !isEditingText && (<button onClick={() => setIsEditingText(true)} className="text-sm text-indigo-600 font-semibold">Խմբագրել Տեքստը</button>)}
+                    {item.content_type === 'dropdown' && !isEditingTitle && (<button onClick={() => setIsEditingTitle(true)} className="text-sm text-indigo-600 font-semibold">Խմբագրել</button>)}
+                    {item.content_type === 'text' && !isEditingText && (<button onClick={() => setIsEditingText(true)} className="text-sm text-indigo-600 font-semibold">Խմբագրել</button>)}
                     <button onClick={() => onDelete(item)} className="text-sm text-red-600 font-semibold">Ջնջել</button>
                 </div>
             </div>
@@ -235,7 +235,7 @@ const AdminTeacherGuidePage = () => {
 
     return (
         <div className="p-10">
-            <h1 className="text-3xl font-bold mb-6">Խմբագրել Ուղեցույցը Ուսուցիչների համար</h1>
+            <h1 className="text-3xl font-bold mb-6">Խմբագրել Ուսուցիչների Ուղեցույցը</h1>
             <div className="bg-gray-50 p-8 rounded-xl shadow-inner">
                 {nestedContent.map(item => (
                     <EditableGuideItem key={item.id} item={item} onUpdate={handleUpdateItem} onDelete={setDeleteTarget} onAddChild={handleAddItem} newlyCreatedId={newlyCreatedId} onSaveTitle={handleSaveTitle} />
