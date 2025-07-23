@@ -100,7 +100,7 @@ const EditableGuideItem = ({ item, onUpdate, onDelete, onAddChild, newlyCreatedI
                             <h3 className="font-bold text-xl text-gray-800">{item.title}</h3>
                         )
                     ) : (
-                        <span className="text-gray-600 italic">Text Block</span>
+                        <span className="text-gray-600 italic">Տեքստային բլոկ</span>
                     )}
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
@@ -246,7 +246,7 @@ const AdminTeacherGuidePage = () => {
             </div>
             {deleteTarget && (
                 <ConfirmationModal 
-                    message={`Վստա՞հ եք, որ ուզում եք ջնջել "${deleteTarget.title || 'Text Block'}" բաժինը և դրա ամբողջ պարունակությունը։`}
+                    message={`Վստա՞հ եք, որ ուզում եք ջնջել "${deleteTarget.title || 'Տեքստային բլոկ'}" բաժինը և դրա ամբողջ պարունակությունը։`}
                     onConfirm={handleDeleteItem}
                     onCancel={() => setDeleteTarget(null)}
                 />
