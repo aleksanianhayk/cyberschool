@@ -22,7 +22,7 @@ const AdminLayout = () => {
         <div className="flex h-screen bg-gray-100">
             <aside className={`relative z-30 flex flex-col bg-white shadow-xl transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
                 <div className="flex items-center justify-between p-4 border-b h-16">
-                    <h1 className={`text-xl font-bold text-indigo-600 whitespace-nowrap ${isSidebarOpen ? '' : 'hidden'}`}>Ադմին Վահանակ</h1>
+                    <h1 className={`text-xl font-bold text-indigo-600 whitespace-nowrap ${isSidebarOpen ? '' : 'hidden'}`}>CyberSchool Admin</h1>
                     <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-lg hover:bg-gray-200">
                         <CollapseIcon />
                     </button>
