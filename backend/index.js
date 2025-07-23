@@ -97,11 +97,11 @@ app.post("/api/login", async (req, res) => {
     try {
         const { identifier, password } = req.body;
         const [results] = await db.query("SELECT * FROM users WHERE email = ? OR phone = ?", [identifier, identifier]);
-        if (results.length === 0) return res.status(404).json({ message: "User not found." });
+        if (results.length === 0) return res.status(404).json({ message: "Հաշիվը չգտնվեց։" });
         
         const user = results[0];
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(401).json({ message: "Invalid credentials." });
+        if (!isMatch) return res.status(401).json({ message: "Սխալ ներմուծված տվյալներ։" });
 
         if (user.is_two_factor_enabled) {
             return res.status(200).json({ twoFactorRequired: true, userId: user.id });
@@ -157,14 +157,14 @@ app.post("/api/users/change-password", verifyToken, async (req, res) => {
     try {
         const { oldPassword, newPassword } = req.body;
         const [userRows] = await db.query("SELECT * FROM users WHERE id = ?", [req.user.id]);
-        if (userRows.length === 0) return res.status(404).json({ message: "User not found." });
+        if (userRows.length === 0) return res.status(404).json({ message: "Հաշիվը չգտնվեց։" });
         const user = userRows[0];
         const isMatch = await bcrypt.compare(oldPassword, user.password);
-        if (!isMatch) return res.status(401).json({ message: "Incorrect old password." });
+        if (!isMatch) return res.status(401).json({ message: "Սխալ հին գաղտնաբառ։" });
         const salt = await bcrypt.genSalt(10);
         const hashedNewPassword = await bcrypt.hash(newPassword, salt);
         await db.query("UPDATE users SET password = ? WHERE id = ?", [hashedNewPassword, req.user.id]);
-        res.status(200).json({ message: "Password changed successfully." });
+        res.status(200).json({ message: "Գաղտնաբառը հաջողությամբ փոխվեց։" });
     } catch (error) {
         res.status(500).json({ message: "Internal server error." });
     }
@@ -177,7 +177,7 @@ app.post("/api/users/2fa/generate", verifyToken, async (req, res) => {
         const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
         res.json({ secret: secret.base32, qrCodeUrl });
     } catch (error) {
-        res.status(500).json({ message: "Failed to generate 2FA secret." });
+        res.status(500).json({ message: "Չհաջողվեց ստեղծել 2FA բանալի։" });
     }
 });
 
@@ -189,9 +189,9 @@ app.post("/api/users/2fa/verify", verifyToken, async (req, res) => {
         const verified = speakeasy.totp.verify({ secret: userRows[0].two_factor_secret, encoding: 'base32', token });
         if (verified) {
             await db.query("UPDATE users SET is_two_factor_enabled = TRUE WHERE id = ?", [req.user.id]);
-            res.status(200).json({ message: "2FA enabled successfully!" });
+            res.status(200).json({ message: "2FA հաջողությամբ ակտիվացվեց։" });
         } else {
-            res.status(400).json({ message: "Invalid token." });
+            res.status(400).json({ message: "Սխալ թոքեն։" });
         }
     } catch (error) {
         res.status(500).json({ message: "Internal server error." });
@@ -233,10 +233,8 @@ app.get("/api/sections-with-courses", verifyToken, async (req, res) => {
             WHERE c.is_active = true 
         `;
 
-        // If the user is not an admin or superadmin, filter courses by their role
         if (userRole !== 'admin' && userRole !== 'superadmin') {
-            // This SQL checks if the user's role exists in the course's allowed_roles JSON array.
-            // It also shows courses where allowed_roles is empty or not set (meaning it's for everyone).
+
             const roleCheckClause = ` AND (JSON_CONTAINS(c.allowed_roles, '"${userRole}"') OR c.allowed_roles IS NULL OR JSON_LENGTH(c.allowed_roles) = 0)`;
             coursesQuery += roleCheckClause;
         }
@@ -244,8 +242,6 @@ app.get("/api/sections-with-courses", verifyToken, async (req, res) => {
         coursesQuery += " GROUP BY c.id ORDER BY c.title ASC";
         
         const [courses] = await db.query(coursesQuery);
-
-        // ... (The rest of the logic to group courses by section remains the same)
         const coursesBySection = {};
         courses.forEach(course => {
             const sectionId = course.section_id || 'uncategorized';
@@ -399,7 +395,7 @@ app.delete("/api/admin/users/:id", async (req, res) => {
     try {
         const { id } = req.params;
         const [result] = await db.query("DELETE FROM users WHERE id = ?", [id]);
-        if (result.affectedRows === 0) return res.status(404).json({ message: "User not found." });
+        if (result.affectedRows === 0) return res.status(404).json({ message: "Հաշիվը չգտնվեց։" });
         res.status(200).json({ message: "User deleted successfully." });
     } catch (error) {
         res.status(500).json({ message: "Database error." });
@@ -761,7 +757,7 @@ app.delete("/api/admin/users/:id",verifyToken, isAdminOrSuperAdmin, async (req, 
 
         // Get the role of the user to be deleted
         const [targetUserRows] = await db.query("SELECT role FROM users WHERE id = ?", [id]);
-        if (targetUserRows.length === 0) return res.status(404).json({ message: "User not found." });
+        if (targetUserRows.length === 0) return res.status(404).json({ message: "Հաշիվը չգտնվեց։" });
         
         const targetUserRole = targetUserRows[0].role;
 
