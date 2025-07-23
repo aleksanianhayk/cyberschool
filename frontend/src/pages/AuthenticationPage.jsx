@@ -1,12 +1,11 @@
 // /frontend/src/pages/AuthenticationPage.jsx
 
 import React, { useState, useContext } from "react";
-import axios from "axios"; // Reverted back to using axios directly
+import axios from "axios";
 import { AuthContext } from "../context/AuthContext.jsx";
 import { useNavigate, useLocation } from "react-router-dom";
 import { jwtDecode } from 'jwt-decode';
 
-// Define the full API URL, which will be used by all functions in this file
 const API_URL = `${import.meta.env.VITE_API_URL}/api`;
 
 const AuthenticationPage = () => {
@@ -45,7 +44,6 @@ const AuthenticationPage = () => {
 const LoginForm = () => {
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
-  const location = useLocation();
   const [formData, setFormData] = useState({ identifier: "", password: "" });
   const [error, setError] = useState("");
   const [is2faModalOpen, setIs2faModalOpen] = useState(false);
@@ -70,7 +68,6 @@ const LoginForm = () => {
     e.preventDefault();
     setError("");
     try {
-      // Use axios with the full, correct URL
       const res = await axios.post(`${API_URL}/login`, formData);
       if (res.data.twoFactorRequired) {
         setUserIdFor2fa(res.data.userId);
@@ -141,11 +138,7 @@ const Login2faModal = ({ userId, onSuccess, onClose }) => {
     e.preventDefault();
     setError("");
     try {
-      // Use axios with the full, correct URL
-      const res = await axios.post(`${API_URL}/login/2fa/verify`, {
-        userId,
-        token,
-      });
+      const res = await axios.post(`${API_URL}/login/2fa/verify`, { userId, token });
       onSuccess(res.data.token);
     } catch (err) {
       setError(err.response?.data?.message || "Verification failed.");
@@ -209,26 +202,33 @@ const RegisterForm = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  const handlePhoneChange = (e) => {
+    const numericValue = e.target.value.replace(/[^0-9]/g, "");
+    setFormData({ ...formData, phone: numericValue });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
 
+    if (formData.password.length < 8) {
+        setError("Գաղտնաբառը պետք է լինի առնվազն 8 նիշ։");
+        return;
+    }
+
     const submissionData = {
       ...formData,
+      phone: `+374${formData.phone}`,
       grade: formData.role === "student" ? formData.grade : null,
     };
 
     try {
-      // Use axios with the full, correct URL
       await axios.post(`${API_URL}/register`, submissionData);
       setSuccess("Գրանցումը հաջողվեց։ Խնդրում ենք մուտք գործել։");
-      e.target.reset();
+      setFormData({ name: "", email: "", password: "", phone: "", gender: "male", school_name: "", role: "student", grade: "2" });
     } catch (err) {
-      setError(
-        err.response?.data?.message ||
-          "Գրանցման սխալ։ Խնդրում ենք փորձել կրկին։"
-      );
+      setError(err.response?.data?.message || "Գրանցման սխալ։ Խնդրում ենք փորձել կրկին։");
     }
   };
 
@@ -247,60 +247,29 @@ const RegisterForm = () => {
         </p>
       )}
 
-      <input
-        name="name"
-        placeholder="Անուն"
-        onChange={handleChange}
-        required
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-      />
-      <input
-        name="email"
-        type="email"
-        placeholder="Էլ. փոստ"
-        onChange={handleChange}
-        required
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-      />
-      <input
-        name="password"
-        type="password"
-        placeholder="Գաղտնաբառ"
-        onChange={handleChange}
-        required
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-      />
-      <input
-        name="phone"
-        placeholder="Հեռախոս"
-        onChange={handleChange}
-        required
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-      />
-      <input
-        name="school_name"
-        placeholder="Դպրոցի անվանումը"
-        onChange={handleChange}
-        required
-        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-      />
+      <input name="name" placeholder="Անուն" onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
+      <input name="email" type="email" placeholder="Էլ. փոստ" onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
+      <input name="password" type="password" placeholder="Գաղտնաբառ" onChange={handleChange} required minLength="8" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
+      
+      {/* Phone Input with Flag */}
+      <div>
+          <label className="block text-sm font-medium text-gray-700">Հեռախոս</label>
+          <div className="mt-1 flex rounded-md shadow-sm">
+              <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                  🇦🇲 +374
+              </span>
+              <input type="tel" name="phone" value={formData.phone} onChange={handlePhoneChange} required className="flex-1 block w-full rounded-none rounded-r-md px-3 py-2 border border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" placeholder="XX XXXXXX"/>
+          </div>
+      </div>
+
+      <input name="school_name" placeholder="Դպրոցի անվանումը" onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
 
       <div className="flex flex-col sm:flex-row gap-4">
-        <select
-          name="gender"
-          onChange={handleChange}
-          value={formData.gender}
-          className="w-full sm:w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-        >
+        <select name="gender" onChange={handleChange} value={formData.gender} className="w-full sm:w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
           <option value="male">Արական</option>
           <option value="female">Իգական</option>
         </select>
-        <select
-          name="role"
-          onChange={handleChange}
-          value={formData.role}
-          className="w-full sm:w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-        >
+        <select name="role" onChange={handleChange} value={formData.role} className="w-full sm:w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
           <option value="student">Աշակերտ</option>
           <option value="teacher">Ուսուցիչ</option>
           <option value="parent">Ծնող</option>
@@ -309,29 +278,14 @@ const RegisterForm = () => {
 
       {formData.role === "student" && (
         <div>
-          <label className="block text-sm font-medium text-gray-700">
-            Դասարան
-          </label>
-          <select
-            name="grade"
-            onChange={handleChange}
-            value={formData.grade}
-            required
-            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            {gradeOptions.map((grade) => (
-              <option key={grade} value={grade}>
-                {grade}
-              </option>
-            ))}
+          <label className="block text-sm font-medium text-gray-700">Դասարան</label>
+          <select name="grade" onChange={handleChange} value={formData.grade} required className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+            {gradeOptions.map((grade) => (<option key={grade} value={grade}>{grade}</option>))}
           </select>
         </div>
       )}
 
-      <button
-        type="submit"
-        className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-      >
+      <button type="submit" className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
         Գրանցվել
       </button>
     </form>
