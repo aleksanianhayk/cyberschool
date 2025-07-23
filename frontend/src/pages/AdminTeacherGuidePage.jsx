@@ -104,9 +104,9 @@ const EditableGuideItem = ({ item, onUpdate, onDelete, onAddChild, newlyCreatedI
                     )}
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
-                    {item.content_type === 'dropdown' && !isEditingTitle && (<button onClick={() => setIsEditingTitle(true)} className="text-sm text-indigo-600 font-semibold">Edit Title</button>)}
-                    {item.content_type === 'text' && !isEditingText && (<button onClick={() => setIsEditingText(true)} className="text-sm text-indigo-600 font-semibold">Edit Text</button>)}
-                    <button onClick={() => onDelete(item)} className="text-sm text-red-600 font-semibold">Delete</button>
+                    {item.content_type === 'dropdown' && !isEditingTitle && (<button onClick={() => setIsEditingTitle(true)} className="text-sm text-indigo-600 font-semibold">Խմբագրել Վերնագիրը</button>)}
+                    {item.content_type === 'text' && !isEditingText && (<button onClick={() => setIsEditingText(true)} className="text-sm text-indigo-600 font-semibold">Խմբագրել Տեքստը</button>)}
+                    <button onClick={() => onDelete(item)} className="text-sm text-red-600 font-semibold">Ջնջել</button>
                 </div>
             </div>
 
@@ -123,8 +123,8 @@ const EditableGuideItem = ({ item, onUpdate, onDelete, onAddChild, newlyCreatedI
                         <EditableGuideItem key={child.id} item={child} onUpdate={onUpdate} onDelete={onDelete} onAddChild={onAddChild} newlyCreatedId={newlyCreatedId} onSaveTitle={onSaveTitle} />
                     ))}
                     <div className="mt-2 ml-4">
-                        <button onClick={() => onAddChild(item.id, 'dropdown')} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2">+ Add Dropdown</button>
-                        <button onClick={() => onAddChild(item.id, 'text')} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">+ Add Text</button>
+                        <button onClick={() => onAddChild(item.id, 'dropdown')} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded mr-2">+ Ավելացնել Dropdown</button>
+                        <button onClick={() => onAddChild(item.id, 'text')} className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">+ Ավելացնել Տեքստ</button>
                     </div>
                 </div>
             )}
