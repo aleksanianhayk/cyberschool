@@ -137,6 +137,7 @@ const CourseDetailsView = ({ course, onUpdate }) => {
     const [details, setDetails] = useState(course);
     const [sections, setSections] = useState([]);
     const [notification, setNotification] = useState(null);
+    const availableRoles = ['student', 'teacher', 'parent'];
 
     useEffect(() => {
         setDetails({ ...course, allowed_roles: Array.isArray(course.allowed_roles) ? course.allowed_roles : [] });

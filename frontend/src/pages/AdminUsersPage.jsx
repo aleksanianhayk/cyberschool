@@ -63,7 +63,7 @@ const AdminUsersPage = () => {
         <div className="p-10">
             <h1 className="text-3xl font-bold mb-6">Օգտատերերի կառավարում</h1>
             {error && <p className="text-red-500">{error}</p>}
-            <div className="bg-white shadow-md rounded-lg overflow-hidden">
+            <div className="bg-white shadow-md rounded-lg overflow-scroll">
                 <table className="min-w-full leading-normal">
                     <thead>
                         <tr className="bg-gray-100 text-left text-gray-600 uppercase text-sm">
