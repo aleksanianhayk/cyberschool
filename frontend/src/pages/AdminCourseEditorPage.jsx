@@ -139,7 +139,7 @@ const CourseDetailsView = ({ course, onUpdate }) => {
     const [notification, setNotification] = useState(null);
 
     useEffect(() => {
-        setDetails(course);
+        setDetails({ ...course, allowed_roles: Array.isArray(course.allowed_roles) ? course.allowed_roles : [] });
     }, [course]);
     
     useEffect(() => {
@@ -163,6 +163,10 @@ const CourseDetailsView = ({ course, onUpdate }) => {
         });
     };
 
+    const handleRoleChange = (e) => {
+        const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+        onUpdate({ ...details, allowed_roles: selectedOptions });
+    };
     const handleSave = async () => {
         try {
             const token = localStorage.getItem('cyberstorm_token');
@@ -172,6 +176,7 @@ const CourseDetailsView = ({ course, onUpdate }) => {
             setNotification({ type: 'error', message: err.response?.data?.message || 'Դասընթացը պահպանել չհաջողվեց։' });
         }
     };
+    
 
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
@@ -201,12 +206,28 @@ const CourseDetailsView = ({ course, onUpdate }) => {
                             {sections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
                         </select>
                     </div>
-                    <div className="w-1/2 flex items-end pb-1">
-                         <label className="flex items-center gap-3">
-                            <input type="checkbox" name="is_active" checked={!!details.is_active} onChange={handleChange} className="h-5 w-5"/>
-                            <span className="font-medium">Ակտիվացնել դասընթացը</span>
-                        </label>
+                    {/* === NEW: Allowed Roles Multi-Select === */}
+                    <div className="w-1/2">
+                        <label className="block font-medium">Թույլատրված դերեր (թողնել դատարկ բոլորի համար)</label>
+                        <select 
+                            multiple 
+                            name="allowed_roles" 
+                            value={details.allowed_roles} 
+                            onChange={handleRoleChange} 
+                            className="w-full mt-1 p-2 border rounded-md h-24"
+                        >
+                            {availableRoles.map(role => (
+                                <option key={role} value={role} className="capitalize p-1">{role}</option>
+                            ))}
+                        </select>
                     </div>
+                </div>
+                <div className="flex justify-between items-center border-t pt-6">
+                    <label className="flex items-center gap-3">
+                        <input type="checkbox" name="is_active" checked={!!details.is_active} onChange={handleChange} className="h-5 w-5"/>
+                        <span className="font-medium">Ակտիվացնել դասընթացը</span>
+                    </label>
+                    <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">Պահպանել փոփոխությունները</button>
                 </div>
                 <div className="flex justify-end border-t pt-6">
                     <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">Պահպանել փոփոխությունները</button>

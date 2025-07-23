@@ -220,19 +220,47 @@ app.post("/api/ask-ai", verifyToken, async (req, res) => {
 // === PUBLIC/STUDENT-FACING APIS ====================================
 // ===================================================================
 
-app.get("/api/sections-with-courses", async (req, res) => {
+app.get("/api/sections-with-courses", verifyToken, async (req, res) => {
     try {
+        const userRole = req.user.role;
+        
         const [sections] = await db.query("SELECT * FROM sections ORDER BY order_index ASC, title ASC");
-        const [courses] = await db.query(`SELECT c.*, COUNT(p.id) as page_count FROM courses c LEFT JOIN pages p ON c.id = p.course_id WHERE c.is_active = true GROUP BY c.id ORDER BY c.title ASC`);
+        
+        let coursesQuery = `
+            SELECT c.*, COUNT(p.id) as page_count 
+            FROM courses c 
+            LEFT JOIN pages p ON c.id = p.course_id 
+            WHERE c.is_active = true 
+        `;
+
+        // If the user is not an admin, filter courses by their role
+        if (userRole !== 'admin' && userRole !== 'superadmin') {
+            // JSON_CONTAINS checks if the user's role is in the allowed_roles array
+            coursesQuery += ` AND (JSON_CONTAINS(c.allowed_roles, '"${userRole}"') OR c.allowed_roles IS NULL OR JSON_LENGTH(c.allowed_roles) = 0)`;
+        }
+
+        coursesQuery += " GROUP BY c.id ORDER BY c.title ASC";
+        
+        const [courses] = await db.query(coursesQuery);
+
         const coursesBySection = {};
         courses.forEach(course => {
             const sectionId = course.section_id || 'uncategorized';
             if (!coursesBySection[sectionId]) coursesBySection[sectionId] = [];
             coursesBySection[sectionId].push(course);
         });
-        const sectionsWithCourses = sections.map(section => ({ ...section, courses: coursesBySection[section.id] || [] })).filter(section => section.courses.length > 0);
+
+        const sectionsWithCourses = sections
+            .map(section => ({
+                ...section,
+                courses: coursesBySection[section.id] || []
+            }))
+            .filter(section => section.courses.length > 0);
+
         res.status(200).json(sectionsWithCourses);
+
     } catch (error) {
+        console.error("Error fetching sections with courses:", error);
         res.status(500).json({ message: "Failed to fetch data." });
     }
 });
@@ -493,19 +521,27 @@ app.get("/api/admin/courses/:courseIdString", async (req, res) => {
 app.put("/api/admin/courses/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, course_id_string, description, image_url, section_id, is_active } = req.body;
+        const { title, course_id_string, description, image_url, section_id, is_active, allowed_roles } = req.body;
+        
         if (!title || !course_id_string) return res.status(400).json({ message: "Title and Course ID are required." });
-        const query = `UPDATE courses SET title = ?, course_id_string = ?, description = ?, image_url = ?, section_id = ?, is_active = ? WHERE id = ?`;
-        const values = [title, course_id_string, description, image_url, section_id || null, is_active ? 1 : 0, id];
-        const [result] = await db.query(query, values);
-        if (result.affectedRows === 0) return res.status(404).json({ message: "Course not found." });
+
+        const query = `
+            UPDATE courses 
+            SET title = ?, course_id_string = ?, description = ?, image_url = ?, section_id = ?, is_active = ?, allowed_roles = ?
+            WHERE id = ?
+        `;
+        const rolesJson = JSON.stringify(allowed_roles || []);
+        
+        const values = [title, course_id_string, description, image_url, section_id || null, is_active ? 1 : 0, rolesJson, id];
+        
+        await db.query(query, values);
         res.status(200).json({ message: "Course updated successfully!" });
     } catch (error) {
-        console.error("Error updating course:", error);
         if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: "This Course ID is already in use." });
         res.status(500).json({ message: "Failed to update course." });
     }
 });
+
 
 app.delete("/api/admin/courses/:id", async (req, res) => {
     try {
