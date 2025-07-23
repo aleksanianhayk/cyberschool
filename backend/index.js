@@ -1,6 +1,6 @@
 // /backend/index.js
 
-// --- Imports ---
+//  Imports 
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
@@ -13,7 +13,6 @@ const qrcode = require('qrcode');
 
 dotenv.config();
 
-// --- App & Middleware Setup ---
 const app = express();
 
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
@@ -29,7 +28,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// --- Database Connection Pool ---
+// Database Connection
 const db = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -107,9 +106,6 @@ app.post("/api/login", async (req, res) => {
         if (user.is_two_factor_enabled) {
             return res.status(200).json({ twoFactorRequired: true, userId: user.id });
         }
-
-        // === UPDATED JWT PAYLOAD ===
-        // Include all necessary user info for the profile and UI
         const payload = { 
             id: user.id, 
             name: user.name, 
@@ -120,7 +116,7 @@ app.post("/api/login", async (req, res) => {
             grade: user.grade,
             is_two_factor_enabled: !!user.is_two_factor_enabled
         };
-        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
+        const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '3h' });
         res.status(200).json({ message: "Login successful!", token });
     } catch (error) {
         res.status(500).json({ message: "Database error." });
@@ -137,7 +133,6 @@ app.post("/api/login/2fa/verify", async (req, res) => {
         const user = userRows[0];
         const verified = speakeasy.totp.verify({ secret: user.two_factor_secret, encoding: 'base32', token });
         if (verified) {
-            // === UPDATED JWT PAYLOAD ===
             const payload = { 
                 id: user.id, 
                 name: user.name, 
@@ -148,7 +143,7 @@ app.post("/api/login/2fa/verify", async (req, res) => {
                 grade: user.grade,
                 is_two_factor_enabled: !!user.is_two_factor_enabled
             };
-            const jwtToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1d' });
+            const jwtToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '3h' });
             res.status(200).json({ message: "Login successful!", token: jwtToken });
         } else {
             res.status(401).json({ message: "Invalid 2FA token." });
@@ -216,7 +211,7 @@ app.post("/api/users/2fa/disable", verifyToken, async (req, res) => {
 // === AI CHAT API ===================================================
 // ===================================================================
 app.post("/api/ask-ai", verifyToken, async (req, res) => {
-    // This is a placeholder for your full AI logic
+    // placeholder AI logic
     const { prompt } = req.body;
     res.status(200).json({ response: `This is a placeholder response to your prompt: "${prompt}"` });
 });
