@@ -309,22 +309,15 @@ app.get("/api/meetups", async (req, res) => {
     }
 });
 
-app.get("/api/meetups/:meetupIdString", verifyToken, async (req, res) => {
+app.get("/api/admin/meetups/:meetupIdString", async (req, res) => {
     try {
         const { meetupIdString } = req.params;
         const [meetupRows] = await db.query("SELECT * FROM meetups WHERE meetup_id_string = ?", [meetupIdString]);
         if (meetupRows.length === 0) return res.status(404).json({ message: "Meetup not found." });
         const meetup = meetupRows[0];
         const [speakers] = await db.query("SELECT * FROM meetup_speakers WHERE meetup_id = ?", [meetup.id]);
-        const [comments] = await db.query("SELECT c.*, u.name as author_name FROM meetup_comments c JOIN users u ON c.user_id = u.id WHERE c.meetup_id = ? ORDER BY c.created_at DESC", [meetup.id]);
-        const [regRows] = await db.query("SELECT id FROM meetup_registrations WHERE user_id = ? AND meetup_id = ?", [req.user.id, meetup.id]);
-        const isRegistered = regRows.length > 0;
-        if (!isRegistered) delete meetup.join_url;
-        
-        const suggestedCourses = []; // Temporarily disabled to prevent crashes
-        res.status(200).json({ ...meetup, speakers, comments, isRegistered, suggestedCourses });
+        res.status(200).json({ ...meetup, speakers});
     } catch (error) {
-        console.error("Error fetching meetup details:", error);
         res.status(500).json({ message: "Failed to fetch meetup details." });
     }
 });
@@ -593,21 +586,16 @@ app.get("/api/admin/meetups/:meetupIdString", async (req, res) => {
         const { meetupIdString } = req.params;
         const [meetupRows] = await db.query("SELECT * FROM meetups WHERE meetup_id_string = ?", [meetupIdString]);
         if (meetupRows.length === 0) return res.status(404).json({ message: "Meetup not found." });
-        
         const meetup = meetupRows[0];
         const [speakers] = await db.query("SELECT * FROM meetup_speakers WHERE meetup_id = ?", [meetup.id]);
-        
-        // Temporarily disable suggested courses to prevent crashes
-        const suggestedCourseIds = []; 
-        
-        res.status(200).json({ ...meetup, speakers, suggestedCourseIds });
+        res.status(200).json({ ...meetup, speakers});
     } catch (error) {
         res.status(500).json({ message: "Failed to fetch meetup details." });
     }
 });
 
 app.post("/api/admin/meetups", async (req, res) => {
-    const { meetupData, speakers, suggestedCourseIds } = req.body;
+    const { meetupData, speakers } = req.body;
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
@@ -619,11 +607,6 @@ app.post("/api/admin/meetups", async (req, res) => {
             const speakerValues = speakers.map(s => [newMeetupId, s.name, s.title]);
             await connection.query(speakerQuery, [speakerValues]);
         }
-        // if (suggestedCourseIds && suggestedCourseIds.length > 0) {
-        //     const suggestedQuery = "INSERT INTO meetup_suggested_courses (meetup_id, course_id) VALUES ?";
-        //     const suggestedValues = suggestedCourseIds.map(courseId => [newMeetupId, courseId]);
-        //     await connection.query(suggestedQuery, [suggestedValues]);
-        // }
         await connection.commit();
         res.status(201).json({ message: "Meetup created successfully!", meetupId: newMeetupId });
     } catch (error) {
@@ -637,7 +620,7 @@ app.post("/api/admin/meetups", async (req, res) => {
 
 app.put("/api/admin/meetups/:id", async (req, res) => {
     const { id } = req.params;
-    const { meetupData, speakers, suggestedCourseIds } = req.body;
+    const { meetupData, speakers } = req.body;
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
@@ -649,12 +632,6 @@ app.put("/api/admin/meetups/:id", async (req, res) => {
             const speakerValues = speakers.map(s => [id, s.name, s.title]);
             await connection.query(speakerQuery, [speakerValues]);
         }
-        // await connection.query("DELETE FROM meetup_suggested_courses WHERE meetup_id = ?", [id]);
-        // if (suggestedCourseIds && suggestedCourseIds.length > 0) {
-        //     const suggestedQuery = "INSERT INTO meetup_suggested_courses (meetup_id, course_id) VALUES ?";
-        //     const suggestedValues = suggestedCourseIds.map(courseId => [id, courseId]);
-        //     await connection.query(suggestedQuery, [suggestedValues]);
-        // }
         await connection.commit();
         res.status(200).json({ message: "Meetup updated successfully!" });
     } catch (error) {

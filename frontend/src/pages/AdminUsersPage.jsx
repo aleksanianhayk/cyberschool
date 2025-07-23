@@ -88,8 +88,8 @@ const AdminUsersPage = () => {
                                     <td className="px-5 py-4">{user.name}</td>
                                     <td className="px-5 py-4">{user.email}</td>
                                     <td className="px-5 py-4">
-                                        <span className={`font-semibold capitalize ${targetIsSuperAdmin ? 'text-red-600' : (targetIsAdmin ? 'text-indigo-600' : 'text-gray-700')}`}>
-                                            {user.role}
+                                        <span className={`font-semibold capitalize ${(targetIsSuperAdmin || targetIsAdmin ? 'text-indigo-600' : 'text-gray-700')}`}>
+                                            {targetIsSuperAdmin ? "Admin" : user.role}
                                         </span>
                                     </td>
                                     <td className="px-5 py-4 text-right space-x-4">
