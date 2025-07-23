@@ -222,7 +222,7 @@ app.post("/api/ask-ai", verifyToken, async (req, res) => {
 
 app.get("/api/sections-with-courses", verifyToken, async (req, res) => {
     try {
-        const userRole = req.user.role;
+        const userRole = req.user.role; // Get role from the verified JWT
         
         const [sections] = await db.query("SELECT * FROM sections ORDER BY order_index ASC, title ASC");
         
@@ -233,30 +233,26 @@ app.get("/api/sections-with-courses", verifyToken, async (req, res) => {
             WHERE c.is_active = true 
         `;
 
-        // If the user is not an admin, filter courses by their role
+        // If the user is not an admin or superadmin, filter courses by their role
         if (userRole !== 'admin' && userRole !== 'superadmin') {
-            // JSON_CONTAINS checks if the user's role is in the allowed_roles array
-            coursesQuery += ` AND (JSON_CONTAINS(c.allowed_roles, '"${userRole}"') OR c.allowed_roles IS NULL OR JSON_LENGTH(c.allowed_roles) = 0)`;
+            // This SQL checks if the user's role exists in the course's allowed_roles JSON array.
+            // It also shows courses where allowed_roles is empty or not set (meaning it's for everyone).
+            const roleCheckClause = ` AND (JSON_CONTAINS(c.allowed_roles, '"${userRole}"') OR c.allowed_roles IS NULL OR JSON_LENGTH(c.allowed_roles) = 0)`;
+            coursesQuery += roleCheckClause;
         }
 
         coursesQuery += " GROUP BY c.id ORDER BY c.title ASC";
         
         const [courses] = await db.query(coursesQuery);
 
+        // ... (The rest of the logic to group courses by section remains the same)
         const coursesBySection = {};
         courses.forEach(course => {
             const sectionId = course.section_id || 'uncategorized';
             if (!coursesBySection[sectionId]) coursesBySection[sectionId] = [];
             coursesBySection[sectionId].push(course);
         });
-
-        const sectionsWithCourses = sections
-            .map(section => ({
-                ...section,
-                courses: coursesBySection[section.id] || []
-            }))
-            .filter(section => section.courses.length > 0);
-
+        const sectionsWithCourses = sections.map(section => ({ ...section, courses: coursesBySection[section.id] || [] })).filter(section => section.courses.length > 0);
         res.status(200).json(sectionsWithCourses);
 
     } catch (error) {
@@ -264,6 +260,7 @@ app.get("/api/sections-with-courses", verifyToken, async (req, res) => {
         res.status(500).json({ message: "Failed to fetch data." });
     }
 });
+
 
 app.get("/api/courses/:courseIdString", verifyToken, async (req, res) => {
     try {

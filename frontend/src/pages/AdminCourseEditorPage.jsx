@@ -164,9 +164,12 @@ const CourseDetailsView = ({ course, onUpdate }) => {
         });
     };
 
-    const handleRoleChange = (e) => {
-        const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-        onUpdate({ ...details, allowed_roles: selectedOptions });
+    const handleRoleChange = (role) => {
+        const currentRoles = details.allowed_roles || [];
+        const newRoles = currentRoles.includes(role)
+            ? currentRoles.filter(r => r !== role) // Uncheck: remove the role
+            : [...currentRoles, role]; // Check: add the role
+        onUpdate({ ...details, allowed_roles: newRoles });
     };
     const handleSave = async () => {
         try {
@@ -207,20 +210,21 @@ const CourseDetailsView = ({ course, onUpdate }) => {
                             {sections.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}
                         </select>
                     </div>
-                    {/* === NEW: Allowed Roles Multi-Select === */}
                     <div className="w-1/2">
                         <label className="block font-medium">Թույլատրված դերեր (թողնել դատարկ բոլորի համար)</label>
-                        <select 
-                            multiple 
-                            name="allowed_roles" 
-                            value={details.allowed_roles} 
-                            onChange={handleRoleChange} 
-                            className="w-full mt-1 p-2 border rounded-md h-24"
-                        >
+                        <div className="mt-2 flex gap-4">
                             {availableRoles.map(role => (
-                                <option key={role} value={role} className="capitalize p-1">{role}</option>
+                                <label key={role} className="flex items-center gap-2 capitalize">
+                                    <input 
+                                        type="checkbox"
+                                        checked={(details.allowed_roles || []).includes(role)}
+                                        onChange={() => handleRoleChange(role)}
+                                        className="h-5 w-5 rounded"
+                                    />
+                                    {role}
+                                </label>
                             ))}
-                        </select>
+                        </div>
                     </div>
                 </div>
                 <div className="flex justify-between items-center border-t pt-6">
@@ -228,9 +232,6 @@ const CourseDetailsView = ({ course, onUpdate }) => {
                         <input type="checkbox" name="is_active" checked={!!details.is_active} onChange={handleChange} className="h-5 w-5"/>
                         <span className="font-medium">Ակտիվացնել դասընթացը</span>
                     </label>
-                    <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">Պահպանել փոփոխությունները</button>
-                </div>
-                <div className="flex justify-end border-t pt-6">
                     <button onClick={handleSave} className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700">Պահպանել փոփոխությունները</button>
                 </div>
             </div>
