@@ -73,7 +73,7 @@ const LearnPage = () => {
                                 </svg>
                             </button>
                             
-                            <div className={`transition-all ease-in-out duration-500 overflow-hidden ${openSections[section.id] ? 'max-h-[1000px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
+                            <div className={`transition-all ease-in-out duration-300 ${openSections[section.id] ? 'max-h-[1000px] opacity-100 mt-6' : 'max-h-0 opacity-0'}`}>
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                                     {section.courses.map(course => (
                                         <CourseCard 
