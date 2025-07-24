@@ -152,7 +152,7 @@ const CourseCard = ({ course, progress, userId, onRestart }) => {
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" /></svg>
                         </button>
                         {optionsOpen && (
-                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10" onMouseLeave={() => setOptionsOpen(false)}>
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 overflow-hidden" onMouseLeave={() => setOptionsOpen(false)}>
                                 <button onClick={handleCopyLink} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 whitespace-nowrap">Պատճենել հղումը</button>
                                 {hasStarted && (
                                     <button onClick={() => setIsRestartModalOpen(true)} className="block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-gray-100 whitespace-nowrap">Վերսկսել</button>
