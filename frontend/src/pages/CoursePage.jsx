@@ -81,7 +81,7 @@ const CoursePage = () => {
 
     // Effect to handle state changes when the current page changes
     useEffect(() => {
-        if (!course || !user) return;
+        if (!course) return;
 
         const pageContent = course.pages[currentPage];
         if (!pageContent) return;
