@@ -3,6 +3,7 @@
 Welcome to the **CyberSchool Educational Platform**, a full-stack web application designed to provide an interactive and secure learning environment for 👩‍🎓 **students**, 👨‍🏫 **teachers**, and 👪 **parents**. The platform features 🔐 **role-based access** to courses, 📅 **live meetups**, 🧠 an **AI-powered assistant**, and ⚙️ a **comprehensive admin panel** for content management.
 
 🔗 **Live Demo**: [https://www.cyberschool.space](https://www.cyberschool.space)
+
 ![QR](frontend/public/qr.png)
 
 ---
