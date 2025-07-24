@@ -1,6 +1,6 @@
 // /frontend/src/components/CourseTools.jsx
 
-import React, { useState, useContext, forwardRef, useImperativeHandle, useMemo, useEffect } from 'react';
+import React, { useState, useContext, forwardRef, useImperativeHandle, useMemo, useEffect, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext.jsx';
 
 // --- Non-Interactive Tools ---
@@ -35,6 +35,10 @@ const InteractiveTool = forwardRef(({ children, checkLogic, onInteract, isComple
         if (isCompleted) {
             setIsCorrect(true);
             setIsAttempted(true);
+        } else {
+            // Reset state if isCompleted changes back to false (e.g., on course restart)
+            setIsCorrect(null);
+            setIsAttempted(false);
         }
     }, [isCompleted]);
 
@@ -51,8 +55,9 @@ const InteractiveTool = forwardRef(({ children, checkLogic, onInteract, isComple
         }
     }));
 
+    // Add onKeyUp to the wrapper to catch keyboard interactions
     return (
-        <div onClick={onInteract} className={`my-6 p-5 bg-white border rounded-lg shadow-sm transition-all ${isAttempted ? (isCorrect ? 'border-green-500 ring-2 ring-green-200' : 'border-red-500 ring-2 ring-red-200') : 'border-gray-200'}`}>
+        <div onKeyUp={onInteract} onClick={onInteract} className={`my-6 p-5 bg-white border rounded-lg shadow-sm transition-all ${isAttempted ? (isCorrect ? 'border-green-500 ring-2 ring-green-200' : 'border-red-500 ring-2 ring-red-200') : 'border-gray-200'}`}>
             {children}
             {isAttempted && (
                 <p className={`mt-4 text-center font-bold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
@@ -145,7 +150,7 @@ export const FillInTheBlanks = forwardRef(({ text, answer, onInteract, isComplet
             <div className="text-center">
                 <p className="text-lg text-gray-700 leading-relaxed">
                     {text.split('___')[0]}
-                    <input type="text" value={isCompleted ? answer : userInput} disabled={isCompleted} onChange={(e) => setUserInput(e.target.value)} className="mx-2 p-1 w-32 border-b-2 border-gray-400 focus:border-indigo-500 outline-none bg-transparent text-center font-semibold text-indigo-700 disabled:bg-gray-100"/>
+                    <input type="text" value={isCompleted ? answer : userInput} disabled={isCompleted} onChange={(e) => setUserInput(e.target.value)} onKeyUp={onInteract} className="mx-2 p-1 w-32 border-b-2 border-gray-400 focus:border-indigo-500 outline-none bg-transparent text-center font-semibold text-indigo-700 disabled:bg-gray-100"/>
                     {text.split('___')[1]}
                 </p>
             </div>
@@ -154,9 +159,11 @@ export const FillInTheBlanks = forwardRef(({ text, answer, onInteract, isComplet
 });
 
 export const Sequencing = forwardRef(({ title, items, answer, onInteract, isCompleted }, ref) => {
-    const [currentItems, setCurrentItems] = useState(() => isCompleted ? items.sort((a, b) => answer.indexOf(a.id) - answer.indexOf(b.id)) : items.sort(() => Math.random() - 0.5));
-    const dragItem = React.useRef(null);
-    const dragOverItem = React.useRef(null);
+    // Use useMemo to ensure shuffling only happens once on mount
+    const shuffledItems = useMemo(() => isCompleted ? [...items].sort((a, b) => answer.indexOf(a.id) - answer.indexOf(b.id)) : [...items].sort(() => Math.random() - 0.5), [items, answer, isCompleted]);
+    const [currentItems, setCurrentItems] = useState(shuffledItems);
+    const dragItem = useRef(null);
+    const dragOverItem = useRef(null);
 
     const handleSort = () => {
         if (isCompleted) return;
@@ -166,10 +173,11 @@ export const Sequencing = forwardRef(({ title, items, answer, onInteract, isComp
         dragItem.current = null;
         dragOverItem.current = null;
         setCurrentItems(_items);
+        onInteract(); // Trigger interaction to enable check button
     };
 
     return (
-        <InteractiveTool ref={ref} onInteract={onInteract} isCompleted={isCompleted} checkLogic={() => currentItems.every((item, i) => item.id === answer[i])}>
+        <InteractiveTool ref={ref} onInteract={() => {}} isCompleted={isCompleted} checkLogic={() => currentItems.every((item, i) => item.id === answer[i])}>
             <p className="font-semibold text-lg mb-4">{title}</p>
             <div className="space-y-2 mt-4">
                 {currentItems.map((item, index) => (
@@ -192,6 +200,7 @@ export const Matching = forwardRef(({ title, pairs, onInteract, isCompleted }, r
         e.preventDefault();
         const termId = e.dataTransfer.getData("termId");
         setMatches(prev => ({ ...prev, [defId]: termId }));
+        onInteract(); // Trigger interaction to enable check button
     };
 
     const checkLogic = () => {
@@ -200,7 +209,7 @@ export const Matching = forwardRef(({ title, pairs, onInteract, isCompleted }, r
     };
 
     return (
-        <InteractiveTool ref={ref} onInteract={onInteract} isCompleted={isCompleted} checkLogic={checkLogic}>
+        <InteractiveTool ref={ref} onInteract={() => {}} isCompleted={isCompleted} checkLogic={checkLogic}>
             <p className="font-semibold text-lg mb-4">{title}</p>
             <div className="flex flex-col md:flex-row justify-between mt-4 gap-8">
                 <div className="w-full md:w-1/3 space-y-2">
