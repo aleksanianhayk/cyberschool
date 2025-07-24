@@ -66,7 +66,7 @@ const LearnPage = () => {
                 {sections.length > 0 ? (
                     sections.map(section => (
                         <div key={section.id} className="bg-slate-100/60 p-6 rounded-xl shadow-sm">
-                            <button onClick={() => toggleSection(section.id)} className="w-full flex justify-between items-center text-left z-20">
+                            <button onClick={() => toggleSection(section.id)} className="w-full flex justify-between items-center text-left z-20 relative">
                                 <h2 className="text-3xl font-bold text-gray-800">{section.title}</h2>
                                 <svg className={`w-6 h-6 text-indigo-500 transition-transform duration-500 ${openSections[section.id] ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
