@@ -37,7 +37,7 @@ const LandingPage = () => {
 
         // --- Gemini API Integration ---
         const apiKey = import.meta.env.VITE_API_KEY || ""; 
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
         const safetyTipContainer = document.getElementById('safety-tip-container');
         const generateTipBtn = document.getElementById('generate-tip-btn');
 
