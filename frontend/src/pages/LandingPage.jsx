@@ -56,9 +56,7 @@ const LandingPage = () => {
 
     const getSafetyTip = async () => {
       showLoading(safetyTipContainer, generateTipBtn);
-      const prompt =
-        "Ստեղծեք կիբերանվտանգության մեկ հակիրճ, դրական և հեշտ հասկանալի հուշում հայերեն: Դարձրեք այն հուսադրող: Օրինակ՝ 'Միշտ հարցրու մեծահասակին, նախքան նոր խաղ ներբեռնելը։' do in one sentance max";
-
+        const prompt = "Գեներացրու կիբերանվտանգության վերաբերյալ մեկ պարզ, դրական և հասկանալի խորհուրդ՝ նախատեսված երեխայի կամ ծնողի համար։ Պատասխանը պետք է լինի միայն հայերեն և բաղկացած լինի մեկ նախադասությունից։";
       try {
         const response = await fetch(apiUrl, {
           method: "POST",
@@ -115,7 +113,7 @@ const LandingPage = () => {
                     --brand-light-green: #f0fdf4;
                 }
                 body { font-family: 'Inter', sans-serif; }
-                .hero-section { background-color: var(--brand-green); }
+                .hero-section { background-color: var(--brand-dark); }
                 .highlight { color: var(--brand-lime); }
                 .btn-primary { background-color: var(--brand-orange); color: white; }
                 .btn-primary:hover { background-color: #E68A2A; }
@@ -397,7 +395,7 @@ const LandingPage = () => {
 
         <section
           className="cta py-24"
-          style={{ backgroundColor: "var(--brand-dark)" }}
+          style={{ backgroundColor: "var(--brand-green)" }}
         >
           <div className="container mx-auto px-6 text-center">
             <div className="cta-content">
