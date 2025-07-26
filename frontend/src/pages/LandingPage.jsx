@@ -49,10 +49,16 @@ const LandingPage = () => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
+
+                if (!response.ok) {
+                    // This will catch errors like 403 Forbidden (API Key issue)
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+
                 const result = await response.json();
                 
-                // --- ADDED: Robust check for API response ---
-                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts.length > 0) {
+                // Robust check for the API response structure
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content?.parts?.length > 0) {
                     const text = result.candidates[0].content.parts[0].text;
                     safetyTipContainer.textContent = text.trim();
                 } else {
@@ -90,7 +96,7 @@ const LandingPage = () => {
                     --brand-lime: #B4E50D;
                     --brand-orange: #FF9B2F;
                     --brand-red: #FB4141;
-                    --brand-dark: #1f2937; /* --- FIXED: Corrected hex code --- */
+                    --brand-dark: #1f2937;
                     --brand-light-green: #f0fdf4;
                 }
                 body { font-family: 'Inter', sans-serif; }
@@ -108,6 +114,15 @@ const LandingPage = () => {
                 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
                 #safety-tip-container { position: relative; background-color: white; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
                 #safety-tip-container::after { content: ''; position: absolute; bottom: 50%; left: -10px; transform: translateY(50%); width: 0; height: 0; border-top: 15px solid transparent; border-bottom: 15px solid transparent; border-right: 15px solid white; }
+                
+                /* --- FIXED: Button Styling --- */
+                #generate-tip-btn {
+                    background-color: var(--brand-orange);
+                    color: white;
+                }
+                #generate-tip-btn:hover {
+                    background-color: var(--brand-orange); /* Keep the color the same on hover */
+                }
             `}</style>
 
             <div className="bg-slate-50">
@@ -195,7 +210,7 @@ const LandingPage = () => {
                                 <div id="safety-tip-container" className="relative min-h-[120px] p-6 text-xl font-medium text-gray-700 flex items-center justify-center">
                                     Սեղմեք կոճակը՝ խորհուրդ ստանալու համար։
                                 </div>
-                                <button id="generate-tip-btn" className="mt-6 bg-brand-orange text-white font-bold px-8 py-3 rounded-lg text-lg shadow-lg hover:bg-orange-600 transition transform hover:scale-105">
+                                <button id="generate-tip-btn" className="mt-6 text-white font-bold px-8 py-3 rounded-lg text-lg shadow-lg transition transform hover:scale-105">
                                     ✨ Ստանալ օրվա խորհուրդը
                                 </button>
                             </div>
