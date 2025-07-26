@@ -50,9 +50,16 @@ const LandingPage = () => {
                     body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
                 const result = await response.json();
-                const text = result.candidates[0].content.parts[0].text;
-                safetyTipContainer.textContent = text.trim();
+                
+                // --- ADDED: Robust check for API response ---
+                if (result.candidates && result.candidates.length > 0 && result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    safetyTipContainer.textContent = text.trim();
+                } else {
+                    throw new Error("Invalid response structure from API");
+                }
             } catch (error) {
+                console.error("Gemini API error:", error);
                 safetyTipContainer.textContent = "Չհաջողվեց ստանալ խորհուրդ։ Խնդրում ենք փորձել մի փոքր ուշ։";
             } finally {
                 if (generateTipBtn) generateTipBtn.disabled = false;
@@ -83,7 +90,7 @@ const LandingPage = () => {
                     --brand-lime: #B4E50D;
                     --brand-orange: #FF9B2F;
                     --brand-red: #FB4141;
-                    --brand-dark: #1f2change-password7;
+                    --brand-dark: #1f2937; /* --- FIXED: Corrected hex code --- */
                     --brand-light-green: #f0fdf4;
                 }
                 body { font-family: 'Inter', sans-serif; }
