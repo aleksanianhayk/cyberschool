@@ -103,8 +103,8 @@ export const TrueFalse = forwardRef(({ statement, answer, onInteract, isComplete
         <InteractiveTool ref={ref} onInteract={onInteract} isCompleted={isCompleted} checkLogic={() => selection === answer}>
             <p className="font-semibold text-lg mb-4 text-center">{statement}</p>
             <div className="flex gap-4">
-                <button onClick={() => !isCompleted && setSelection('true')} disabled={isCompleted} className={`w-full py-2 px-4 font-bold rounded-lg transition ${isCompleted && answer === 'true' ? 'bg-green-600 text-white ring-2 ring-offset-2 ring-green-600' : 'bg-green-500 text-white hover:bg-green-600 disabled:bg-green-300'}`}>Ճիշտ է</button>
-                <button onClick={() => !isCompleted && setSelection('false')} disabled={isCompleted} className={`w-full py-2 px-4 font-bold rounded-lg transition ${isCompleted && answer === 'false' ? 'bg-red-600 text-white ring-2 ring-offset-2 ring-red-600' : 'bg-red-500 text-white hover:bg-red-600 disabled:bg-red-300'}`}>Սխալ է</button>
+                <button onClick={() => !isCompleted && setSelection('true')} disabled={isCompleted} className={`w-full py-2 px-4 font-bold rounded-lg transition ${(isCompleted && answer === 'true')||(selection === 'true') ? 'bg-green-600 text-white ring-2 ring-offset-2 ring-green-600' : 'bg-green-500 text-white hover:bg-green-600 disabled:bg-green-300'}`}>Ճիշտ է</button>
+                <button onClick={() => !isCompleted && setSelection('false')} disabled={isCompleted} className={`w-full py-2 px-4 font-bold rounded-lg transition ${(isCompleted && answer === 'false')||(selection === 'false') ? 'bg-red-600 text-white ring-2 ring-offset-2 ring-red-600' : 'bg-red-500 text-white hover:bg-red-600 disabled:bg-red-300'}`}>Սխալ է</button>
             </div>
         </InteractiveTool>
     );
@@ -134,7 +134,7 @@ export const SelectImage = forwardRef(({ question, images, answer, onInteract, i
             <p className="font-semibold text-lg mb-4">{question}</p>
             <div className="grid grid-cols-2 gap-4">
                 {images.map((img, index) => (
-                    <div key={index} onClick={() => !isCompleted && setSelectedImg(img.src)} className={`rounded-lg p-1 transition-all duration-200 ${isCompleted ? 'cursor-default' : 'cursor-pointer'} ${isCompleted && answer === img.src ? 'border-4 border-indigo-500 ring-4 ring-indigo-200' : 'border-2 border-transparent hover:border-indigo-400'}`}>
+                    <div key={index} onClick={() => !isCompleted && setSelectedImg(img.src)} className={`rounded-lg p-1 transition-all duration-200 ${isCompleted ? 'cursor-default' : 'cursor-pointer'} ${(isCompleted && answer === img.src)||(selectedImg === img.src) ? 'border-4 border-indigo-500 ring-4 ring-indigo-200' : 'border-2 border-transparent hover:border-indigo-400'}`}>
                         <img src={img.src} alt={img.alt} className="rounded-md w-full h-full object-cover"/>
                     </div>
                 ))}
