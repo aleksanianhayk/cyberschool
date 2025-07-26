@@ -4,7 +4,7 @@ import React, { useState, useContext, forwardRef, useImperativeHandle, useMemo, 
 import { AuthContext } from '../context/AuthContext.jsx';
 
 // --- Non-Interactive Tools ---
-export const PlainText = ({ text }) => <p className="text-lg text-gray-700 my-4 leading-relaxed">{text}</p>;
+export const PlainText = ({ text }) => <p className="text-lg text-gray-700 my-4 leading-relaxed">{{ __html: text }}</p>;
 export const Image = ({ src, alt }) => <img src={src} alt={alt} className="my-6 rounded-lg shadow-md max-w-full mx-auto" />;
 export const ParentTeacherTip = ({ tip }) => {
     const { user } = useContext(AuthContext);
