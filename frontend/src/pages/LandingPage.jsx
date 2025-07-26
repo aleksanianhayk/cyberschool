@@ -29,7 +29,8 @@ const LandingPage = () => {
         });
 
         // --- Gemini API Integration ---
-        const apiKey = ""; // API key is handled by the environment
+        // === THE FIX IS HERE: Correctly read the API key from environment variables ===
+        const apiKey = import.meta.env.VITE_API_KEY || ""; 
         const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
         const safetyTipContainer = document.getElementById('safety-tip-container');
         const generateTipBtn = document.getElementById('generate-tip-btn');
@@ -51,13 +52,11 @@ const LandingPage = () => {
                 });
 
                 if (!response.ok) {
-                    // This will catch errors like 403 Forbidden (API Key issue)
                     throw new Error(`API request failed with status ${response.status}`);
                 }
 
                 const result = await response.json();
                 
-                // Robust check for the API response structure
                 if (result.candidates && result.candidates.length > 0 && result.candidates[0].content?.parts?.length > 0) {
                     const text = result.candidates[0].content.parts[0].text;
                     safetyTipContainer.textContent = text.trim();
@@ -115,13 +114,12 @@ const LandingPage = () => {
                 #safety-tip-container { position: relative; background-color: white; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
                 #safety-tip-container::after { content: ''; position: absolute; bottom: 50%; left: -10px; transform: translateY(50%); width: 0; height: 0; border-top: 15px solid transparent; border-bottom: 15px solid transparent; border-right: 15px solid white; }
                 
-                /* --- FIXED: Button Styling --- */
                 #generate-tip-btn {
                     background-color: var(--brand-orange);
                     color: white;
                 }
                 #generate-tip-btn:hover {
-                    background-color: var(--brand-orange); /* Keep the color the same on hover */
+                    background-color: var(--brand-orange);
                 }
             `}</style>
 
@@ -129,7 +127,7 @@ const LandingPage = () => {
                 <nav id="navbar" className="fixed top-0 left-0 w-full z-50 transition-all duration-300 py-4">
                     <div className="container mx-auto px-6 flex justify-between items-center">
                         <div className="nav-logo">
-                            <h2 className="text-3xl font-bold text-white transition-colors duration-300">CyberStorm</h2>
+                            <h2 className="text-3xl font-bold text-white transition-colors duration-300">CyberSchool</h2>
                         </div>
                         <ul className="hidden md:flex items-center space-x-8">
                             <li><a href="#features" className="nav-link text-white font-semibold transition-colors duration-300">Առանձնահատկություններ</a></li>
@@ -146,14 +144,14 @@ const LandingPage = () => {
                                 Ապահով թվային ուսուցում <span className="highlight">նոր սերնդի</span> համար
                             </h1>
                             <p className="mt-6 text-lg text-green-100">
-                                CyberStorm-ը ստեղծում է ինտերակտիվ և անվտանգ միջավայր, որտեղ երեխաները, ծնողները և ուսուցիչները միասին սովորում են թվային գրագիտություն և կիբերանվտանգություն։
+                                CyberSchool-ը ստեղծում է ինտերակտիվ և անվտանգ միջավայր, որտեղ երեխաները, ծնողները և ուսուցիչները միասին սովորում են թվային գրագիտություն և կիբերանվտանգություն։
                             </p>
                             <div className="mt-8 flex justify-center md:justify-start space-x-4">
                                 <Link to="/authentication" className="btn-primary font-bold px-8 py-3 rounded-lg text-lg shadow-lg hover:scale-105 transform transition-transform duration-300">Սկսել ուսումը</Link>
                             </div>
                         </div>
                         <div className="hero-image relative">
-                            <img src="https://i.imgur.com/gC0y5bJ.png" alt="CyberStorm Dragon Mascot" className="w-full max-w-sm mx-auto md:max-w-md"/>
+                            <img src="/frontend/public/dragon1.png" alt="CyberSchool Dragon Mascot" className="w-full max-w-sm mx-auto md:max-w-md"/>
                         </div>
                     </div>
                 </section>
@@ -162,7 +160,7 @@ const LandingPage = () => {
                     <div className="container mx-auto px-6">
                         <div className="text-center mb-16 fade-in-section">
                             <h2 className="text-4xl font-bold">Ստեղծված է կրթական համայնքի համար</h2>
-                            <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">CyberStorm-ը ստեղծում է անվտանգ էկոհամակարգ, որտեղ աշակերտները, ծնողները և ուսուցիչները համագործակցում են։</p>
+                            <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">CyberSchool-ը ստեղծում է անվտանգ էկոհամակարգ, որտեղ աշակերտները, ծնողները և ուսուցիչները համագործակցում են։</p>
                         </div>
                         <div className="grid md:grid-cols-3 gap-8">
                             <div className="audience-card bg-white p-8 rounded-xl shadow-lg fade-in-section">
@@ -184,7 +182,7 @@ const LandingPage = () => {
                 <section id="features" className="py-20 bg-brand-light-green">
                     <div className="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
                         <div className="feature-image fade-in-section">
-                            <img src="https://i.imgur.com/i4aYx1h.png" alt="Interactive course screenshot"/>
+                            <img src="/frontend/public/dragon4.png" alt="Interactive course screenshot"/>
                         </div>
                         <div className="feature-text fade-in-section">
                             <h2 className="text-4xl font-bold mb-6">Ժամանակակից ուսուցման հզոր հնարավորություններ</h2>
@@ -198,19 +196,18 @@ const LandingPage = () => {
                     </div>
                 </section>
                 
-                {/* Gemini Feature: Safety Tip from Sparky */}
                 <section className="py-20 bg-white fade-in-section">
                     <div className="container mx-auto max-w-4xl">
                         <div className="flex flex-col md:flex-row items-center gap-8">
                             <div className="md:w-1/3 flex-shrink-0">
-                                <img src="https://i.imgur.com/gC0y5bJ.png" alt="CyberStorm Dragon Mascot" className="w-full max-w-[250px] mx-auto"/>
+                                <img src="/frontend/public/dragon2.png" alt="CyberSchool Dragon Mascot" className="w-full max-w-[250px] mx-auto"/>
                             </div>
                             <div className="md:w-2/3">
                                 <h3 className="text-3xl md:text-4xl font-bold mb-4">Խորհուրդ Սպարկիից</h3>
                                 <div id="safety-tip-container" className="relative min-h-[120px] p-6 text-xl font-medium text-gray-700 flex items-center justify-center">
                                     Սեղմեք կոճակը՝ խորհուրդ ստանալու համար։
                                 </div>
-                                <button id="generate-tip-btn" className="mt-6 text-white font-bold px-8 py-3 rounded-lg text-lg shadow-lg transition transform hover:scale-105">
+                                <button id="generate-tip-btn" className="mt-6 font-bold px-8 py-3 rounded-lg text-lg shadow-lg transition transform hover:scale-105">
                                     ✨ Ստանալ օրվա խորհուրդը
                                 </button>
                             </div>
@@ -233,7 +230,7 @@ const LandingPage = () => {
                 <footer id="contact" className="footer bg-gray-900 text-white py-16">
                     <div className="container mx-auto px-6 grid md:grid-cols-4 gap-8">
                         <div className="footer-section">
-                            <h3 className="text-2xl font-bold mb-4">CyberStorm</h3>
+                            <h3 className="text-2xl font-bold mb-4">CyberSchool</h3>
                             <p className="text-gray-400">Նոր սերնդի զինումը՝ անվտանգ թվային գրագիտությամբ և կիբերանվտանգության կրթությամբ։</p>
                         </div>
                         <div className="footer-section">
@@ -261,7 +258,7 @@ const LandingPage = () => {
                         </div>
                     </div>
                     <div className="container mx-auto px-6 mt-12 border-t border-gray-700 pt-8 text-center text-gray-500">
-                        <p>&copy; 2025 CyberStorm. Բոլոր իրավունքները պաշտպանված են։</p>
+                        <p>&copy; 2025 CyberSchool. Բոլոր իրավունքները պաշտպանված են։</p>
                     </div>
                 </footer>
             </div>
