@@ -5,6 +5,9 @@ import { Link } from 'react-router-dom';
 
 const LandingPage = () => {
     useEffect(() => {
+        console.log("VITE_API_KEY loaded in browser:", import.meta.env.VITE_API_KEY);
+
+
         const navbar = document.getElementById('navbar');
         const hamburger = document.getElementById('hamburger');
         const mobileMenu = document.getElementById('mobile-menu');
