@@ -28,25 +28,62 @@ const LandingPage = () => {
             observer.observe(section);
         });
 
-        // Cleanup function to remove event listeners when the component unmounts
+        // --- Gemini API Integration ---
+        const apiKey = ""; // API key is handled by the environment
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+        const safetyTipContainer = document.getElementById('safety-tip-container');
+        const generateTipBtn = document.getElementById('generate-tip-btn');
+
+        const showLoading = (element, button) => {
+            element.innerHTML = '<div class="loader mx-auto"></div>';
+            if (button) button.disabled = true;
+        };
+
+        const getSafetyTip = async () => {
+            showLoading(safetyTipContainer, generateTipBtn);
+            const prompt = "Generate one concise, positive, and easy-to-understand cybersecurity tip for a child or parent, in Armenian. Make it encouraging. For example: 'Միշտ հարցրու մեծահասակին, նախքան նոր խաղ ներբեռնելը։'";
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const result = await response.json();
+                const text = result.candidates[0].content.parts[0].text;
+                safetyTipContainer.textContent = text.trim();
+            } catch (error) {
+                safetyTipContainer.textContent = "Չհաջողվեց ստանալ խորհուրդ։ Խնդրում ենք փորձել մի փոքր ուշ։";
+            } finally {
+                if (generateTipBtn) generateTipBtn.disabled = false;
+            }
+        };
+
+        if (generateTipBtn) {
+            generateTipBtn.addEventListener('click', getSafetyTip);
+        }
+
+        // Cleanup function
         return () => {
             window.removeEventListener('scroll', handleScroll);
             document.querySelectorAll('.fade-in-section').forEach(section => {
                 observer.unobserve(section);
             });
+            if (generateTipBtn) {
+                generateTipBtn.removeEventListener('click', getSafetyTip);
+            }
         };
     }, []);
 
     return (
         <>
-            {/* All custom CSS is now embedded here for simplicity */}
             <style>{`
                 :root {
                     --brand-green: #78C841;
                     --brand-lime: #B4E50D;
                     --brand-orange: #FF9B2F;
                     --brand-red: #FB4141;
-                    --brand-dark: #1f2937;
+                    --brand-dark: #1f2change-password7;
                     --brand-light-green: #f0fdf4;
                 }
                 body { font-family: 'Inter', sans-serif; }
@@ -60,6 +97,10 @@ const LandingPage = () => {
                 #navbar.header-scrolled .cta-button { background-color: var(--brand-orange); color: white; }
                 .fade-in-section { opacity: 0; transform: translateY(30px); transition: opacity 0.8s ease-out, transform 0.6s ease-out; }
                 .fade-in-section.is-visible { opacity: 1; transform: translateY(0); }
+                .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--brand-orange); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                #safety-tip-container { position: relative; background-color: white; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+                #safety-tip-container::after { content: ''; position: absolute; bottom: 50%; left: -10px; transform: translateY(50%); width: 0; height: 0; border-top: 15px solid transparent; border-bottom: 15px solid transparent; border-right: 15px solid white; }
             `}</style>
 
             <div className="bg-slate-50">
@@ -131,6 +172,26 @@ const LandingPage = () => {
                                 <li className="flex items-start"><span className="text-xl mr-3" style={{color: 'var(--brand-green)'}}>✔</span> <span><strong className="font-semibold">Առաջընթացի հետևում։</strong> Խելացի համակարգ, որը պահպանում է օգտատերերի առաջընթացը։</span></li>
                                 <li className="flex items-start"><span className="text-xl mr-3" style={{color: 'var(--brand-green)'}}>✔</span> <span><strong className="font-semibold">AI Օգնական։</strong> Gemini API-ի վրա հիմնված մեր AI-ն տալիս է անհատականացված պատասխաններ։</span></li>
                             </ul>
+                        </div>
+                    </div>
+                </section>
+                
+                {/* Gemini Feature: Safety Tip from Sparky */}
+                <section className="py-20 bg-white fade-in-section">
+                    <div className="container mx-auto max-w-4xl">
+                        <div className="flex flex-col md:flex-row items-center gap-8">
+                            <div className="md:w-1/3 flex-shrink-0">
+                                <img src="https://i.imgur.com/gC0y5bJ.png" alt="CyberStorm Dragon Mascot" className="w-full max-w-[250px] mx-auto"/>
+                            </div>
+                            <div className="md:w-2/3">
+                                <h3 className="text-3xl md:text-4xl font-bold mb-4">Խորհուրդ Սպարկիից</h3>
+                                <div id="safety-tip-container" className="relative min-h-[120px] p-6 text-xl font-medium text-gray-700 flex items-center justify-center">
+                                    Սեղմեք կոճակը՝ խորհուրդ ստանալու համար։
+                                </div>
+                                <button id="generate-tip-btn" className="mt-6 bg-brand-orange text-white font-bold px-8 py-3 rounded-lg text-lg shadow-lg hover:bg-orange-600 transition transform hover:scale-105">
+                                    ✨ Ստանալ օրվա խորհուրդը
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </section>
