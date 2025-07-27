@@ -3,38 +3,47 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Confetti from 'react-confetti';
-import { useWindowSize } from 'react-use'; // A helper to get the screen size
+import { useWindowSize } from 'react-use';
 
 const CourseCompletion = ({ courseTitle }) => {
     const { width, height } = useWindowSize();
 
-    // Custom emoji "pieces" for the emoji rain effect
-    const emojiPieces = ['🎉', '✨', '🎓', '🚀', '👍', '✅'];
-    const drawShape = (ctx) => {
-        ctx.font = '30px serif'; // Larger emojis
+    // Emojis for the "rain" effect
+    const emojiPieces = ['🎉', '✨', '🎓', '🚀', '👍', '✅', '🏆', '💯'];
+    
+    // Custom drawing function for emojis with random sizes
+    const drawEmoji = (ctx) => {
+        const fontSize = Math.random() * 20 + 20; // Emojis between 20px and 40px
+        ctx.font = `${fontSize}px serif`;
         ctx.fillText(emojiPieces[Math.floor(Math.random() * emojiPieces.length)], 0, 0);
     };
 
     return (
         <div className="relative w-full">
-            {/* Layer 1: Traditional Ribbon Confetti */}
+            {/* === LAYER 1: A LOT of traditional confetti === */}
+            {/* This layer creates a dense shower of colorful ribbons and shapes. */}
             <Confetti
                 width={width}
                 height={height}
-                numberOfPieces={200} // A good amount of ribbons
+                numberOfPieces={600} // A lot of confetti
                 recycle={false}
-                gravity={0.15}
+                gravity={0.12}
                 wind={0.01}
-                tweenDuration={10000} // Slower fall
+                tweenDuration={10000} // Fall slowly
             />
-            {/* Layer 2: Emoji Rain */}
+            
+            {/* === LAYER 2: Emoji Rain === */}
+            {/* This layer makes emojis fall straight down like rain, without spinning. */}
             <Confetti
                 width={width}
                 height={height}
-                numberOfPieces={50} // Fewer emojis
+                numberOfPieces={70} // A gentle rain of emojis
                 recycle={false}
-                gravity={0.2} // Emojis fall a bit faster
-                drawShape={drawShape}
+                gravity={0.25} // Emojis fall a bit faster
+                angle={90} // Point them straight down
+                spread={80} // Spread them out horizontally
+                initialVelocityX={0} // No sideways initial push
+                drawShape={drawEmoji}
                 tweenDuration={8000}
             />
             
