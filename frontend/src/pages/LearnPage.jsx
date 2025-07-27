@@ -68,7 +68,7 @@ const LearnPage = () => {
                         <div key={section.id} className="bg-slate-100/60 p-6 rounded-xl shadow-sm">
                             <button onClick={() => toggleSection(section.id)} className="w-full flex justify-between items-center text-left z-20 relative">
                                 <h2 className="text-3xl font-bold text-gray-800">{section.title}</h2>
-                                <svg className={`w-6 h-6 text-indigo-500 transition-transform duration-500 ${openSections[section.id] ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className={`w-6 h-6 text-green-500 transition-transform duration-500 ${openSections[section.id] ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
                             </button>
@@ -103,7 +103,7 @@ const ConfirmationModal = ({ title, message, onConfirm, onCancel }) => (
             <p className="text-gray-600 mb-6">{message}</p>
             <div className="flex justify-center gap-4">
                 <button onClick={onCancel} className="px-6 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Չեղարկել</button>
-                <button onClick={onConfirm} className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700">Հաստատել</button>
+                <button onClick={onConfirm} className="px-6 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700">Հաստատել</button>
             </div>
         </div>
     </div>
@@ -172,7 +172,7 @@ const CourseCard = ({ course, progress, userId, onRestart }) => {
                                 <div className="bg-green-500 h-2.5 rounded-full" style={{ width: `${progressPercentage}%` }}></div>
                             </div>
                         ) : (
-                             <button onClick={handleStart} className="inline-block px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition text-sm">
+                             <button onClick={handleStart} className="inline-block px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 transition text-sm">
                                 Սկսել դասընթացը
                             </button>
                         )}

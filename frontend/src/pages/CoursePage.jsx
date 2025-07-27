@@ -154,7 +154,7 @@ const CoursePage = () => {
             <header className="w-full bg-white shadow-md sticky top-0 z-10 p-4">
                 <div className="max-w-5xl mx-auto">
                     <div className="flex justify-between items-center">
-                         <Link to="/learn" className="text-sm text-indigo-600 hover:underline">← Վերադառնալ դասընթացներին</Link>
+                         <Link to="/learn" className="text-sm text-green-600 hover:underline">← Վերադառնալ</Link>
                          <h2 className="text-xl font-bold text-center">{course.title}</h2>
                          <div className="w-1/4"></div>
                     </div>
@@ -164,7 +164,7 @@ const CoursePage = () => {
                             <div className="bg-green-300 h-4 rounded-full transition-all duration-300" style={{ width: `${progressPercentage}%` }}></div>
                             <div className="absolute top-0 left-0 bg-indigo-600 h-4 rounded-full transition-all duration-300" style={{ width: `${currentPagePercentage}%` }}></div>
                         </div>
-                        <button onClick={goToNext} disabled={!isNextButtonActive} className="px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50 disabled:bg-gray-400">Հաջորդ</button>
+                        <button onClick={goToNext} disabled={!isNextButtonActive} className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50 disabled:bg-gray-400">Հաջորդ</button>
                     </div>
                     <div className="text-center mt-2 text-sm text-gray-600">Էջ {currentPage + 1} / {totalPages}</div>
                 </div>
@@ -191,7 +191,7 @@ const CoursePage = () => {
                     {hasInteractiveTools && !isPageCompleted && (
                          <div className="mt-6 p-4 h-24 flex items-center justify-center">
                             {pageResult === 'correct' ? (
-                                <button onClick={goToNext} className="px-10 py-4 text-xl font-bold bg-indigo-600 text-white rounded-lg shadow-lg hover:bg-indigo-700 transition-all transform hover:scale-105">
+                                <button onClick={goToNext} className="px-10 py-4 text-xl font-bold bg-green-600 text-white rounded-lg shadow-lg hover:bg-lime-700 transition-all transform hover:scale-105">
                                     Շարունակել →
                                 </button>
                             ) : (

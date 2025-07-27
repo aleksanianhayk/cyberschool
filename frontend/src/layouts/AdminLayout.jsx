@@ -22,7 +22,7 @@ const AdminLayout = () => {
         <div className="flex h-screen bg-gray-100">
             <aside className={`relative z-30 flex flex-col bg-white shadow-xl transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
                 <div className="flex items-center justify-between p-4 border-b h-16">
-                    <h1 className={`text-xl font-bold text-indigo-600 whitespace-nowrap ${isSidebarOpen ? '' : 'hidden'}`}>CyberSchool Admin</h1>
+                    <h1 className={`text-xl font-bold text-green-600 whitespace-nowrap ${isSidebarOpen ? '' : 'hidden'}`}>CyberSchool Admin</h1>
                     <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-lg hover:bg-gray-200">
                         <CollapseIcon />
                     </button>
@@ -54,9 +54,9 @@ const AdminLayout = () => {
 
 const AdminNavLink = ({ to, icon, label, isOpen }) => {
     const baseClasses = "flex items-center p-3 my-2 rounded-lg font-medium transition-colors";
-    const activeClasses = "bg-indigo-100 text-indigo-600";
+    const activeClasses = "bg-green-100 text-green-600";
     const inactiveClasses = "text-gray-600 hover:bg-gray-100";
-    const iconWithColor = React.cloneElement(icon, { className: !isOpen && 'text-indigo-600' });
+    const iconWithColor = React.cloneElement(icon, { className: !isOpen && 'text-green-600' });
 
     return (
         <NavLink to={to} className={({ isActive }) => `${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}>

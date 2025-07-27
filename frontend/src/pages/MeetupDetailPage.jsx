@@ -123,7 +123,7 @@ const MeetupDetailPage = () => {
                 <h2 className="text-2xl font-bold mb-6">Մեկնաբանություններ</h2>
                 <form onSubmit={handlePostComment} className="flex gap-4 mb-8">
                     <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Թողնել մեկնաբանություն..." className="flex-grow p-3 border rounded-lg"/>
-                    <button type="submit" className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg">Ուղարկել</button>
+                    <button type="submit" className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg">Ուղարկել</button>
                 </form>
                 <div className="space-y-6">
                     {meetup.comments.map(comment => (

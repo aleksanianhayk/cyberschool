@@ -118,7 +118,7 @@ const ChangePasswordModal = ({ user, onClose }) => {
                     <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Նոր գաղտնաբառ" required className="w-full p-2 border rounded-md"/>
                     <div className="flex justify-end gap-4">
                         <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Փակել</button>
-                        <button type="submit" className="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-700">Պահպանել</button>
+                        <button type="submit" className="px-4 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700">Պահպանել</button>
                     </div>
                 </form>
             </div>
@@ -164,7 +164,7 @@ const TwoFactorAuthModal = ({ user, onClose, onEnabled }) => {
                 {message.text && <p className={`p-2 rounded-md mb-4 ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{message.text}</p>}
                 
                 {step === 1 && (
-                    <button onClick={handleGenerate} className="w-full px-5 py-2 bg-indigo-600 text-white font-semibold rounded-lg">Ակտիվացնել 2FA</button>
+                    <button onClick={handleGenerate} className="w-full px-5 py-2 bg-green-600 text-white font-semibold rounded-lg">Ակտիվացնել 2FA</button>
                 )}
 
                 {step === 2 && (

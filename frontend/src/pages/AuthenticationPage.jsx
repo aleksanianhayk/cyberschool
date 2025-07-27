@@ -19,8 +19,8 @@ const AuthenticationPage = () => {
             onClick={() => setActiveTab("login")}
             className={`w-1/2 py-4 text-center font-semibold transition-colors duration-300 ${
               activeTab === "login"
-                ? "text-lime-600 border-b-2 border-lime-600"
-                : "text-gray-500 hover:text-lime-500"
+                ? "text-green-600 border-b-2 border-green-600"
+                : "text-gray-500 hover:text-green-500"
             }`}
           >
             Մուտք
@@ -29,8 +29,8 @@ const AuthenticationPage = () => {
             onClick={() => setActiveTab("register")}
             className={`w-1/2 py-4 text-center font-semibold transition-colors duration-300 ${
               activeTab === "register"
-                ? "text-lime-600 border-b-2 border-lime-600"
-                : "text-gray-500 hover:text-lime-500"
+                ? "text-green-600 border-b-2 border-green-600"
+                : "text-gray-500 hover:text-green-500"
             }`}
           >
             Գրանցում
@@ -98,7 +98,7 @@ const LoginForm = () => {
             name="identifier"
             onChange={handleChange}
             required
-            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-lime-500 focus:border-lime-500"
+            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
           />
         </div>
         <div>
@@ -110,12 +110,12 @@ const LoginForm = () => {
             name="password"
             onChange={handleChange}
             required
-            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-lime-500 focus:border-lime-500"
+            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
           />
         </div>
         <button
           type="submit"
-          className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-lime-600 hover:bg-lime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500"
+          className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
         >
           Մուտք
         </button>
@@ -250,9 +250,9 @@ const RegisterForm = () => {
         </p>
       )}
 
-      <input name="name" placeholder="Անուն" onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-lime-500 focus:border-lime-500"/>
-      <input name="email" type="email" placeholder="Էլ. փոստ" onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-lime-500 focus:border-lime-500"/>
-      <input name="password" type="password" placeholder="Գաղտնաբառ" onChange={handleChange} required minLength="8" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-lime-500 focus:border-lime-500"/>
+      <input name="name" placeholder="Անուն" onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"/>
+      <input name="email" type="email" placeholder="Էլ. փոստ" onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"/>
+      <input name="password" type="password" placeholder="Գաղտնաբառ" onChange={handleChange} required minLength="8" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"/>
       
       {/* Phone Input with Flag */}
       <div>
@@ -261,18 +261,18 @@ const RegisterForm = () => {
               <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
                   🇦🇲 +374
               </span>
-              <input type="tel" name="phone" value={formData.phone} onChange={handlePhoneChange} required className="flex-1 block w-full rounded-none rounded-r-md px-3 py-2 border border-gray-300 focus:outline-none focus:ring-lime-500 focus:border-lime-500" placeholder="XX XXXXXX"/>
+              <input type="tel" name="phone" value={formData.phone} onChange={handlePhoneChange} required className="flex-1 block w-full rounded-none rounded-r-md px-3 py-2 border border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500" placeholder="XX XXXXXX"/>
           </div>
       </div>
 
-      <input name="school_name" placeholder="Դպրոցի անվանումը" onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-lime-500 focus:border-lime-500"/>
+      <input name="school_name" placeholder="Դպրոցի անվանումը" onChange={handleChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"/>
 
       <div className="flex flex-col sm:flex-row gap-4">
-        <select name="gender" onChange={handleChange} value={formData.gender} className="w-full sm:w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-lime-500 focus:border-lime-500">
+        <select name="gender" onChange={handleChange} value={formData.gender} className="w-full sm:w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500">
           <option value="male">Արական</option>
           <option value="female">Իգական</option>
         </select>
-        <select name="role" onChange={handleChange} value={formData.role} className="w-full sm:w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-lime-500 focus:border-lime-500">
+        <select name="role" onChange={handleChange} value={formData.role} className="w-full sm:w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500">
           <option value="student">Աշակերտ</option>
           <option value="teacher">Ուսուցիչ</option>
           <option value="parent">Ծնող</option>
@@ -282,7 +282,7 @@ const RegisterForm = () => {
       {formData.role === "student" && (
         <div>
           <label className="block text-sm font-medium text-gray-700">Դասարան</label>
-          <select name="grade" onChange={handleChange} value={formData.grade} required className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-lime-500 focus:border-lime-500">
+          <select name="grade" onChange={handleChange} value={formData.grade} required className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500">
             {gradeOptions.map((grade) => (<option key={grade} value={grade}>{grade}</option>))}
           </select>
         </div>
@@ -302,7 +302,7 @@ const RegisterForm = () => {
                 href={`${import.meta.env.VITE_API_URL}/static/PrivacyPolicy.pdf`} 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="text-lime-600 hover:underline"
+                className="text-green-600 hover:underline"
             >
                 Գաղտնիության քաղաքականությանը
             </a>.
@@ -311,7 +311,7 @@ const RegisterForm = () => {
       <button
         type="submit"
         disabled={!privacyAccepted} // Button is disabled until checkbox is checked
-        className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-lime-600 hover:bg-lime-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-lime-500 disabled:bg-gray-400"
+        className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400"
       >
         Գրանցվել
       </button>
