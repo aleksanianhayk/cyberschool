@@ -16,10 +16,10 @@ const CourseCompletion = ({ courseTitle }) => {
                 height={height}
                 numberOfPieces={6000} // A lot of confetti for a big celebration
                 recycle={false}
-                gravity={0.3}      // Makes confetti fall slower
+                gravity={0.2}      // Makes confetti fall slower
                 wind={0}     // A gentle breeze
-                initialVelocityX={{ min: -30, max: 30 }} // Spread out horizontally
-                initialVelocityY={{ min: -15, max: 15 }}  // Shoot upwards initially
+                initialVelocityX={{ min: -10, max: 10 }} // Spread out horizontally
+                initialVelocityY={{ min: -15, max: 5 }}  // Shoot upwards initially
                 tweenDuration={9000} // Linger for a long time (15 seconds)
                 colors={['#78C841', '#B4E50D', '#FF9B2F', '#FB4141', '#FFFFFF']}
             />
