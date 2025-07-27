@@ -35,7 +35,6 @@ const CoursePage = () => {
     const [highestPageIndex, setHighestPageIndex] = useState(-1);
     const [isCourseComplete, setIsCourseComplete] = useState(false);
     const [isCheckActive, setIsCheckActive] = useState(false);
-    const [pageResult, setPageResult] = useState(null);
     const [isNextButtonActive, setIsNextButtonActive] = useState(false);
     const interactiveComponentRefs = useRef([]);
 
@@ -69,7 +68,6 @@ const CoursePage = () => {
                 if (location.state?.restarted) {
                     setCurrentPage(0);
                 } else if (fetchedIndex > -1) {
-                    // If user has already completed the last page, show completion screen
                     if (fetchedIndex === courseData.pages.length - 1) {
                         setIsCourseComplete(true);
                         setCurrentPage(fetchedIndex);
@@ -94,12 +92,12 @@ const CoursePage = () => {
         const pageContent = course.pages[currentPage];
         if (!pageContent) return;
 
-        const hasInteractiveTools = pageContent.components.some(c => interactiveToolTypes.includes(c.component_type));
+        // === THE FIX IS HERE: Ensure pageContent.components is always an array ===
+        const components = pageContent.components || [];
+        const hasInteractiveTools = components.some(c => interactiveToolTypes.includes(c.component_type));
         const isPageCompleted = currentPage <= highestPageIndex;
 
         setIsNextButtonActive(!hasInteractiveTools || isPageCompleted);
-        setPageResult(isPageCompleted ? 'correct' : null);
-        setIsCheckActive(false);
         interactiveComponentRefs.current = [];
 
         if (!hasInteractiveTools && currentPage > highestPageIndex) {
@@ -127,11 +125,10 @@ const CoursePage = () => {
     };
 
     const handleInteraction = () => {
-        if (pageResult !== 'correct') {
+        const isPageCompleted = currentPage <= highestPageIndex;
+        if (!isPageCompleted) {
             setIsCheckActive(true);
-            if (pageResult === 'incorrect') {
-                interactiveComponentRefs.current.forEach(ref => ref?.reset());
-            }
+            interactiveComponentRefs.current.forEach(ref => ref?.reset());
         }
     };
 
@@ -143,9 +140,6 @@ const CoursePage = () => {
                 if (!isCorrect) allCorrect = false;
             }
         });
-        
-        setPageResult(allCorrect ? 'correct' : 'incorrect');
-        setIsCheckActive(false);
         
         if (allCorrect) {
             setIsNextButtonActive(true);
@@ -161,7 +155,8 @@ const CoursePage = () => {
     const progressPercentage = totalPages > 0 ? ((highestPageIndex + 1) / totalPages) * 100 : 0;
     const currentPagePercentage = isCourseComplete ? 100 : (totalPages > 0 ? ((currentPage + 1) / totalPages) * 100 : 0);
     const pageContent = course.pages[currentPage];
-    const hasInteractiveTools = pageContent?.components.some(c => interactiveToolTypes.includes(c.component_type));
+    const components = pageContent?.components || []; // Safeguard here as well
+    const hasInteractiveTools = components.some(c => interactiveToolTypes.includes(c.component_type));
     const isPageCompleted = currentPage <= highestPageIndex;
 
     return (
@@ -198,7 +193,7 @@ const CoursePage = () => {
                         <>
                             <div className="bg-white p-6 sm:p-10 rounded-xl shadow-lg">
                                 {pageContent ? (
-                                    pageContent.components.map((component, index) => (
+                                    components.map((component, index) => (
                                         <ComponentRenderer 
                                             key={component.id || index} 
                                             componentData={component} 
@@ -212,12 +207,12 @@ const CoursePage = () => {
                                 )}
                             </div>
 
-                            {hasInteractiveTools && !isPageCompleted && (
+                            {hasInteractiveTools && (
                                 <div className="mt-6 p-4 h-24 flex items-center justify-center">
-                                    {isNextButtonActive ? (
-                                        <div className="text-2xl font-bold p-4 rounded-lg bg-green-100 text-green-700">
-                                            Հիանալի է։ Այժմ կարող եք շարունակել։
-                                        </div>
+                                    {isPageCompleted ? (
+                                        <button onClick={goToNext} className="px-10 py-4 text-xl font-bold bg-lime-600 text-white rounded-lg shadow-lg hover:bg-lime-700 transition-all transform hover:scale-105">
+                                            Շարունակել →
+                                        </button>
                                     ) : (
                                         <button onClick={handleCheck} disabled={!isCheckActive} className="px-10 py-4 text-xl font-bold bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
                                             Ստուգել

@@ -1,7 +1,7 @@
 // /frontend/src/pages/AdminCourseEditorPage.jsx
 
 import React, { useState, useEffect, useContext } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import AdminComponentEditor from '../components/AdminComponentEditor';
 import { AuthContext } from '../context/AuthContext.jsx';
@@ -21,12 +21,20 @@ const ConfirmationModal = ({ message, onConfirm, onCancel }) => (
     </div>
 );
 
-const Notification = ({ message, type, onDismiss }) => (
-    <div className={`fixed bottom-5 right-5 p-4 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
-        {message}
-        <button onClick={onDismiss} className="ml-4 font-bold">X</button>
-    </div>
-);
+const Notification = ({ message, type, onDismiss }) => {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onDismiss();
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [onDismiss]);
+
+    return (
+        <div className={`fixed bottom-5 right-5 p-4 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+            {message}
+        </div>
+    );
+};
 
 
 const AdminCourseEditorPage = () => {
@@ -71,11 +79,11 @@ const AdminCourseEditorPage = () => {
         }
     };
 
-    const updatePageComponent = (pageId, updatedComponents) => {
+    const updatePageComponent = (pageId, updatedPageData) => {
         setCourse(prevCourse => ({
             ...prevCourse,
             pages: prevCourse.pages.map(page => 
-                page.id === pageId ? { ...page, components: updatedComponents } : page
+                page.id === pageId ? { ...page, ...updatedPageData } : page
             )
         }));
     };
@@ -167,10 +175,11 @@ const CourseDetailsView = ({ course, onUpdate }) => {
     const handleRoleChange = (role) => {
         const currentRoles = details.allowed_roles || [];
         const newRoles = currentRoles.includes(role)
-            ? currentRoles.filter(r => r !== role) // Uncheck: remove the role
-            : [...currentRoles, role]; // Check: add the role
+            ? currentRoles.filter(r => r !== role)
+            : [...currentRoles, role];
         onUpdate({ ...details, allowed_roles: newRoles });
     };
+
     const handleSave = async () => {
         try {
             const token = localStorage.getItem('cyberstorm_token');
@@ -180,7 +189,6 @@ const CourseDetailsView = ({ course, onUpdate }) => {
             setNotification({ type: 'error', message: err.response?.data?.message || 'Դասընթացը պահպանել չհաջողվեց։' });
         }
     };
-    
 
     return (
         <div className="bg-white p-8 rounded-lg shadow-md max-w-4xl mx-auto">
@@ -247,36 +255,38 @@ const PageView = ({ page, onUpdate, onPageDeleted }) => {
 
     const handleAddComponent = (componentType) => {
         const newComponent = { id: `temp-${Date.now()}`, component_type: componentType, props: {} };
-        onUpdate(page.id, [...(page.components || []), newComponent]);
-    };
-
-    const handleTitleChange = (newTitle) => {
-        onUpdate(page.id, { ...page, title: newTitle });
-    };
-
-    const handleCompletionToggle = (isChecked) => {
-        onUpdate(page.id, { ...page, is_completion_page: isChecked });
+        onUpdate(page.id, { ...page, components: [...(page.components || []), newComponent] });
     };
 
     const handleUpdateComponent = (index, newProps) => {
         const updatedComponents = page.components.map((c, i) => i === index ? { ...c, props: newProps } : c);
-        onUpdate(page.id, updatedComponents);
+        onUpdate(page.id, { ...page, components: updatedComponents });
     };
 
     const handleDeleteComponent = (index) => {
         const updatedComponents = page.components.filter((_, i) => i !== index);
-        onUpdate(page.id, updatedComponents);
+        onUpdate(page.id, { ...page, components: updatedComponents });
+    };
+    
+    const handleTitleChange = (newTitle) => {
+        onUpdate(page.id, { ...page, title: newTitle });
+    };
+    
+    const handleCompletionToggle = (isChecked) => {
+        onUpdate(page.id, { ...page, is_completion_page: isChecked });
     };
 
     const handleSavePage = async () => {
         try {
             const token = localStorage.getItem('cyberstorm_token');
-            // Now we send the entire page object, including the new flag
-            await axios.put(`${API_URL}/pages/${page.id}/components`, {
-                title: page.title,
-                is_completion_page: !!page.is_completion_page,
-                components: page.components || []
-            }, { headers: { Authorization: `Bearer ${token}` } });
+            await axios.put(`${API_URL}/pages/${page.id}/components`, 
+                { 
+                    title: page.title,
+                    is_completion_page: !!page.is_completion_page,
+                    components: page.components || [] 
+                }, 
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
             setNotification({ type: 'success', message: 'Էջը հաջողությամբ պահպանվեց։' });
         } catch (err) {
             setNotification({ type: 'error', message: 'Էջը պահպանել չհաջողվեց։' });
