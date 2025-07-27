@@ -1,9 +1,9 @@
-// /frontend/src/pages/AskAiPage.jsx
+// /frontend/src/pages/AskSparkyPage.jsx
 
 import React, { useState, useEffect, useRef } from 'react';
 import chatbotData from '../data/chatbotData.json';
 
-const AskAiPage = () => {
+const AskSparkyPage = () => {
     const [messages, setMessages] = useState([]);
     const [currentNodeKey, setCurrentNodeKey] = useState('start');
     const [isThinking, setIsThinking] = useState(true);
@@ -13,27 +13,32 @@ const AskAiPage = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    // This effect orchestrates the entire conversation flow
     useEffect(() => {
         const currentNode = chatbotData[currentNodeKey];
         if (currentNode) {
+            // Start with a "thinking" animation
             setIsThinking(true);
-            
-            // Add Sparky's answer first, if it exists
-            if (currentNode.answer) {
-                const sparkyAnswer = { sender: 'sparky', content: currentNode.answer };
-                setMessages(prev => [...prev, sparkyAnswer]);
-            }
 
-            // Then, add Sparky's question after a delay
+            // After a short delay, show Sparky's answer (if one exists)
             setTimeout(() => {
-                const sparkyQuestion = {
-                    sender: 'sparky',
-                    content: currentNode.question,
-                    options: currentNode.options
-                };
-                setMessages(prev => [...prev, sparkyQuestion]);
-                setIsThinking(false);
-            }, currentNode.answer ? 1200 : 500); // Longer delay if there was an answer
+                if (currentNode.answer) {
+                    const sparkyAnswer = { sender: 'sparky', content: currentNode.answer };
+                    setMessages(prev => [...prev, sparkyAnswer]);
+                }
+
+                // After another delay, show the next question and options
+                setTimeout(() => {
+                    const sparkyQuestion = {
+                        sender: 'sparky',
+                        content: currentNode.question,
+                        options: currentNode.options
+                    };
+                    setMessages(prev => [...prev, sparkyQuestion]);
+                    setIsThinking(false); // Stop thinking only after the question is shown
+                }, 1200); // 1.2 second delay for the question
+
+            }, 800); // 0.8 second delay for the answer
         }
     }, [currentNodeKey]);
     
@@ -42,8 +47,11 @@ const AskAiPage = () => {
     }, [messages, isThinking]);
 
     const handleOptionClick = (option) => {
+        // First, add the user's choice to the message history
         const userMessage = { sender: 'user', content: option.text };
         setMessages(prev => [...prev, userMessage]);
+        
+        // Then, update the current node key to trigger the useEffect for Sparky's response
         setCurrentNodeKey(option.next);
     };
 
@@ -76,7 +84,7 @@ const AskAiPage = () => {
                 
                 {isThinking && (
                     <div className="flex gap-3">
-                        <img src="/dragon1.png" alt="Sparky" className="w-10 h-10 rounded-full"/>
+                        <img src="/sparky_bot_thinking.png" alt="Sparky" className="w-10 h-10 rounded-full"/>
                         <div className="p-3 rounded-lg bg-gray-200 text-gray-800 flex items-center gap-2">
                             <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
                             <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
@@ -91,4 +99,4 @@ const AskAiPage = () => {
     );
 };
 
-export default AskAiPage;
+export default AskSparkyPage;
