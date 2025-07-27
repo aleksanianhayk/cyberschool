@@ -299,7 +299,7 @@ const RegisterForm = () => {
         <label htmlFor="privacy" className="text-sm text-gray-600">
             Ես կարդացել եմ և համաձայն եմ{" "}
             <a 
-                href={`${import.meta.env.VITE_API_URL}/static/Privacy Policy.pdf`} 
+                href={`${import.meta.env.VITE_API_URL}/static/PrivacyPolicy.pdf`} 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-indigo-600 hover:underline"
