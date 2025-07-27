@@ -5,6 +5,7 @@ import { useParams, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext.jsx';
 import * as CourseTools from '../components/CourseTools.jsx';
+import CourseCompletion from '../components/CourseCompletion.jsx'; // Import the new component
 
 const API_URL = `${import.meta.env.VITE_API_URL}/api`;
 const interactiveToolTypes = ['MultipleChoice', 'TrueFalse', 'ChooseOne', 'SelectImage', 'FillInTheBlanks', 'Sequencing', 'Matching'];
@@ -29,12 +30,12 @@ const CoursePage = () => {
 
     const [currentPage, setCurrentPage] = useState(0);
     const [highestPageIndex, setHighestPageIndex] = useState(-1);
+    const [isCourseComplete, setIsCourseComplete] = useState(false); // New state for completion screen
     const [isCheckActive, setIsCheckActive] = useState(false);
     const [pageResult, setPageResult] = useState(null);
     const [isNextButtonActive, setIsNextButtonActive] = useState(false);
     const interactiveComponentRefs = useRef([]);
 
-    // Central function to save progress to the DB, now with token
     const saveProgress = (pageIndex) => {
         if (!user || !course || pageIndex <= highestPageIndex) return;
         
@@ -46,7 +47,6 @@ const CoursePage = () => {
         setHighestPageIndex(pageIndex);
     };
 
-    // Effect to fetch the course and the user's progress, now with token
     useEffect(() => {
         const fetchCourseAndProgress = async () => {
             if (!user) return;
@@ -63,7 +63,10 @@ const CoursePage = () => {
                 const fetchedIndex = progressRes.data.highestPageIndex;
                 setHighestPageIndex(fetchedIndex);
 
-                if (location.state?.restarted) {
+                // If user has already completed the last page, show completion screen
+                if (fetchedIndex === courseData.pages.length - 1) {
+                    setIsCourseComplete(true);
+                } else if (location.state?.restarted) {
                     setCurrentPage(0);
                 } else if (fetchedIndex > -1) {
                     const startPage = Math.min(fetchedIndex + 1, courseData.pages.length - 1);
@@ -79,7 +82,6 @@ const CoursePage = () => {
         fetchCourseAndProgress();
     }, [courseIdString, user]);
 
-    // Effect to handle state changes when the current page changes
     useEffect(() => {
         if (!course) return;
 
@@ -101,10 +103,14 @@ const CoursePage = () => {
     }, [currentPage, course, highestPageIndex]);
 
     const goToNext = () => {
-        if (currentPage < course.pages.length - 1) {
+        const totalPages = course.pages.length;
+        if (currentPage === totalPages - 1) {
+            setIsCourseComplete(true);
+        } else if (currentPage < totalPages - 1) {
             setCurrentPage(prevPage => prevPage + 1);
         }
     };
+    
     const goToPrev = () => {
         if (currentPage > 0) {
             setCurrentPage(prevPage => prevPage - 1);
@@ -141,6 +147,11 @@ const CoursePage = () => {
     if (loading) return <div className="text-center p-10">Դասընթացը բեռնվում է...</div>;
     if (error) return <div className="text-center p-10 text-red-500">{error}</div>;
     if (!course) return <div className="text-center p-10">Դասընթացը չի գտնվել։</div>;
+
+    // Render the completion screen if the course is finished
+    if (isCourseComplete) {
+        return <CourseCompletion courseTitle={course.title} />;
+    }
 
     const totalPages = course.pages.length;
     const progressPercentage = totalPages > 0 ? ((highestPageIndex + 1) / totalPages) * 100 : 0;
@@ -188,9 +199,9 @@ const CoursePage = () => {
                         )}
                     </div>
 
-                    {hasInteractiveTools && (
+                    {hasInteractiveTools && !isPageCompleted && (
                          <div className="mt-6 p-4 h-24 flex items-center justify-center">
-                            {isPageCompleted ? (
+                            {pageResult === 'correct' ? (
                                 <button onClick={goToNext} className="px-10 py-4 text-xl font-bold bg-lime-600 text-white rounded-lg shadow-lg hover:bg-lime-700 transition-all transform hover:scale-105">
                                     Շարունակել →
                                 </button>
