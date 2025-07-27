@@ -9,7 +9,7 @@ const CourseCompletion = ({ courseTitle }) => {
     const { width, height } = useWindowSize();
 
     return (
-        <div className="relative w-full">
+        <div className="w-full">
             {/* === UPDATED: Single, powerful confetti effect === */}
             <Confetti
                 width={width}
