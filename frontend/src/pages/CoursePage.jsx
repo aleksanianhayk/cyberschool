@@ -191,7 +191,7 @@ const CoursePage = () => {
                     {hasInteractiveTools && (
                          <div className="mt-6 p-4 h-24 flex items-center justify-center">
                             {isPageCompleted ? (
-                                <button onClick={goToNext} className="px-10 py-4 text-xl font-bold bg-indigo-600 text-white rounded-lg shadow-lg hover:bg-indigo-700 transition-all transform hover:scale-105">
+                                <button onClick={goToNext} className="px-10 py-4 text-xl font-bold bg-lime-600 text-white rounded-lg shadow-lg hover:bg-lime-700 transition-all transform hover:scale-105">
                                     Շարունակել →
                                 </button>
                             ) : (
