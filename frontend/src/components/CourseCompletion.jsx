@@ -14,13 +14,13 @@ const CourseCompletion = ({ courseTitle }) => {
             <Confetti
                 width={width}
                 height={height}
-                numberOfPieces={800} // A lot of confetti for a big celebration
+                numberOfPieces={1800} // A lot of confetti for a big celebration
                 recycle={false}
-                gravity={0.1}      // Makes confetti fall slower
+                gravity={0.3}      // Makes confetti fall slower
                 wind={0.05}     // A gentle breeze
                 initialVelocityX={{ min: -10, max: 10 }} // Spread out horizontally
                 initialVelocityY={{ min: -15, max: 5 }}  // Shoot upwards initially
-                tweenDuration={15000} // Linger for a long time (15 seconds)
+                tweenDuration={9000} // Linger for a long time (15 seconds)
                 colors={['#78C841', '#B4E50D', '#FF9B2F', '#FB4141', '#FFFFFF']}
             />
             
