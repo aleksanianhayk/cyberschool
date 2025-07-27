@@ -5,7 +5,7 @@ import chatbotData from '../data/chatbotData.json';
 
 const AskAiPage = () => {
     const [messages, setMessages] = useState([]);
-    const [currentNodeId, setCurrentNodeId] = useState(chatbotData.startNodeId);
+    const [currentNodeKey, setCurrentNodeKey] = useState('start');
     const [isThinking, setIsThinking] = useState(true);
     const messagesEndRef = useRef(null);
 
@@ -14,35 +14,37 @@ const AskAiPage = () => {
     };
 
     useEffect(() => {
-        const currentNode = chatbotData.nodes[currentNodeId];
-        if (currentNode && currentNode.type === 'question') {
+        const currentNode = chatbotData[currentNodeKey];
+        if (currentNode) {
             setIsThinking(true);
+            
+            // Add Sparky's answer first, if it exists
+            if (currentNode.answer) {
+                const sparkyAnswer = { sender: 'sparky', content: currentNode.answer };
+                setMessages(prev => [...prev, sparkyAnswer]);
+            }
+
+            // Then, add Sparky's question after a delay
             setTimeout(() => {
-                const sparkyMessage = {
+                const sparkyQuestion = {
                     sender: 'sparky',
-                    content: currentNode.content,
-                    options: currentNode.children.map(childId => ({ id: childId, ...chatbotData.nodes[childId] }))
+                    content: currentNode.question,
+                    options: currentNode.options
                 };
-                setMessages(prev => [...prev, sparkyMessage]);
+                setMessages(prev => [...prev, sparkyQuestion]);
                 setIsThinking(false);
-            }, 1000);
+            }, currentNode.answer ? 1200 : 500); // Longer delay if there was an answer
         }
-    }, [currentNodeId]);
+    }, [currentNodeKey]);
     
     useEffect(() => {
         scrollToBottom();
     }, [messages, isThinking]);
 
-    const handleAnswerClick = (option) => {
-        if (!option.children || option.children.length === 0) return;
-
-        const userMessage = { sender: 'user', content: option.content };
+    const handleOptionClick = (option) => {
+        const userMessage = { sender: 'user', content: option.text };
         setMessages(prev => [...prev, userMessage]);
-
-        // === THE FIX IS HERE ===
-        // The next node's ID is directly in the answer's 'children' array.
-        const nextNodeId = option.children[0];
-        setCurrentNodeId(nextNodeId);
+        setCurrentNodeKey(option.next);
     };
 
     return (
@@ -52,18 +54,18 @@ const AskAiPage = () => {
             <div className="flex-1 bg-white rounded-lg shadow p-4 overflow-y-auto mb-4 space-y-4">
                 {messages.map((msg, index) => (
                     <div key={index} className={`flex gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        {msg.sender === 'sparky' && <img src="/dragon1.png" alt="Sparky" className="w-10 h-10 h-10 rounded-full"/>}
+                        {msg.sender === 'sparky' && <img src="/sparky_bot.png" alt="Sparky" className="w-10 h-10 rounded-full self-start"/>}
                         <div className={`p-3 rounded-lg max-w-lg ${msg.sender === 'user' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
-                            <p>{msg.content}</p>
+                            <p className="whitespace-pre-wrap">{msg.content}</p>
                             {msg.sender === 'sparky' && msg.options && (
                                 <div className="mt-4 space-y-2">
-                                    {msg.options.map(option => (
+                                    {msg.options.map((option, i) => (
                                         <button 
-                                            key={option.id} 
-                                            onClick={() => handleAnswerClick(option)}
+                                            key={i} 
+                                            onClick={() => handleOptionClick(option)}
                                             className="block w-full text-left p-2 bg-white rounded-md border border-indigo-300 text-indigo-700 font-semibold hover:bg-indigo-50"
                                         >
-                                            {option.content}
+                                            {option.text}
                                         </button>
                                     ))}
                                 </div>

@@ -20,7 +20,7 @@ const UserLayout = () => {
     const location = useLocation();
 
     useEffect(() => {
-        const openPages = ['/learn', '/ask-ai', '/profile', '/meetups', '/teacher-guide'];
+        const openPages = ['/learn', '/ask-sparky', '/profile', '/meetups', '/teacher-guide'];
         if (openPages.includes(location.pathname)) {
             setIsSidebarOpen(true);
         } else {
@@ -41,7 +41,7 @@ const UserLayout = () => {
                 <nav className="flex-1 px-4 py-4 space-y-2">
                     <UserNavLink to="/learn" icon={<CoursesIcon />} label="Դասընթացներ" isOpen={isSidebarOpen} />
                     <UserNavLink to="/meetups" icon={<MeetupIcon />} label="Meetups" isOpen={isSidebarOpen} />
-                    <UserNavLink to="/ask-ai" icon={<ChatbotIcon />} label="Հարցրու Սպարկիին" isOpen={isSidebarOpen} />
+                    <UserNavLink to="/ask-sparky" icon={<ChatbotIcon />} label="Հարցրու Սպարկիին" isOpen={isSidebarOpen} />
                     {user?.role === 'teacher' && (
                         <UserNavLink to="/teacher-guide" icon={<GuideIcon />} label="Ուղեցույց" isOpen={isSidebarOpen} />
                     )}

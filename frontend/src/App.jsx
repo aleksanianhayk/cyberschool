@@ -19,7 +19,7 @@ import LandingPage from "./pages/LandingPage.jsx"; // Import the new landing pag
 import AuthenticationPage from "./pages/AuthenticationPage";
 import LearnPage from "./pages/LearnPage";
 import CoursePage from "./pages/CoursePage";
-import AskAiPage from "./pages/AskAiPage";
+import AskSparkyPage from "./pages/AskSparkyPage.jsx"; // Renamed import
 import ProfilePage from "./pages/ProfilePage";
 import MeetupsListPage from "./pages/MeetupsListPage";
 import MeetupDetailPage from "./pages/MeetupDetailPage";
@@ -65,7 +65,7 @@ function App() {
               <Route path="/learn/course/:courseIdString" element={<CoursePage />} />
               <Route path="/meetups" element={<MeetupsListPage />} />
               <Route path="/meetups/:meetupIdString" element={<MeetupDetailPage />} />
-              <Route path="/ask-ai" element={<AskAiPage />} />
+              <Route path="ask-sparky" element={<AskSparkyPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/teacher-guide" element={<TeacherGuidePage />} />
             </Route>
