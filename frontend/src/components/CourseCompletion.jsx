@@ -8,56 +8,20 @@ import { useWindowSize } from 'react-use';
 const CourseCompletion = ({ courseTitle }) => {
     const { width, height } = useWindowSize();
 
-    // Emojis for the separate "rain" effect
-    const emojiPieces = ['🎉', '✨', '🎓', '🚀', '👍', '✅', '🏆', '💯'];
-    const drawEmoji = (ctx) => {
-        const fontSize = Math.random() * 20 + 20; // Emojis between 20px and 40px
-        ctx.font = `${fontSize}px serif`;
-        ctx.fillText(emojiPieces[Math.floor(Math.random() * emojiPieces.length)], 0, 0);
-    };
-
-    // Custom drawing function for long, ribbon-like confetti
-    const drawRibbon = (ctx) => {
-        const a = Math.random() * 2 * Math.PI;
-        const x = Math.cos(a);
-        const y = Math.sin(a);
-        ctx.beginPath();
-        ctx.moveTo(x * -5, y * -2);
-        ctx.lineTo(x * 5, y * 2);
-        ctx.lineTo(x * 2, y * 5);
-        ctx.lineTo(x * -2, y * -5);
-        ctx.closePath();
-        ctx.fill();
-    };
-
-
     return (
         <div className="relative w-full">
-            {/* === LAYER 1: A LOT of traditional, varied confetti === */}
+            {/* === UPDATED: Single, powerful confetti effect === */}
             <Confetti
                 width={width}
                 height={height}
                 numberOfPieces={800} // A lot of confetti for a big celebration
                 recycle={false}
-                gravity={0.1}
-                wind={0.05}
-                tweenDuration={12000} // Fall slowly for a longer effect
-                drawShape={drawRibbon} // Use the custom ribbon shape
+                gravity={0.1}      // Makes confetti fall slower
+                wind={0.05}     // A gentle breeze
+                initialVelocityX={{ min: -10, max: 10 }} // Spread out horizontally
+                initialVelocityY={{ min: -15, max: 5 }}  // Shoot upwards initially
+                tweenDuration={15000} // Linger for a long time (15 seconds)
                 colors={['#78C841', '#B4E50D', '#FF9B2F', '#FB4141', '#FFFFFF']}
-            />
-            
-            {/* === LAYER 2: Emoji Rain (Unchanged) === */}
-            <Confetti
-                width={width}
-                height={height}
-                numberOfPieces={70}
-                recycle={false}
-                gravity={0.25}
-                angle={90}
-                spread={80}
-                initialVelocityX={0}
-                drawShape={drawEmoji}
-                tweenDuration={8000}
             />
             
             <div className="bg-white p-10 rounded-xl shadow-2xl z-10 text-center">
@@ -69,7 +33,7 @@ const CourseCompletion = ({ courseTitle }) => {
                 </p>
                 <Link
                     to="/learn"
-                    className="px-8 py-3 bg-indigo-600 text-white font-bold rounded-lg text-lg shadow-lg hover:bg-indigo-700 transition-transform transform hover:scale-105"
+                    className="px-8 py-3 bg-lime-600 text-white font-bold rounded-lg text-lg shadow-lg hover:bg-lime-700 transition-transform transform hover:scale-105"
                 >
                     Վերադառնալ բոլոր դասընթացներին
                 </Link>
