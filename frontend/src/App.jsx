@@ -9,8 +9,6 @@ import {
   useLocation,
 } from "react-router-dom";
 import { AuthProvider, AuthContext } from "./context/AuthContext.jsx";
-import AdminChatbotPage from "./pages/AdminChatbotPage"; // New
-
 
 // Layouts
 import AdminLayout from "./layouts/AdminLayout.jsx";
@@ -91,7 +89,6 @@ function App() {
               <Route path="meetups/:meetupIdString" element={<AdminMeetupEditorPage />} />
               <Route path="teacher-guide" element={<AdminTeacherGuidePage />} />
               <Route path="users" element={<AdminUsersPage />} />
-              <Route path="chatbot" element={<AdminChatbotPage />} /> {/* New Route */}
               <Route path="profile" element={<ProfilePage />} />
             </Route>
             

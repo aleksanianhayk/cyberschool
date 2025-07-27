@@ -9,42 +9,39 @@ const AskAiPage = () => {
     const [isThinking, setIsThinking] = useState(true);
     const messagesEndRef = useRef(null);
 
-    // Function to scroll to the bottom of the chat
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    // This effect runs whenever the current node changes
     useEffect(() => {
         const currentNode = chatbotData.nodes[currentNodeId];
         if (currentNode && currentNode.type === 'question') {
             setIsThinking(true);
-            
-            // Simulate "thinking" delay
             setTimeout(() => {
                 const sparkyMessage = {
                     sender: 'sparky',
                     content: currentNode.content,
-                    options: currentNode.children.map(childId => chatbotData.nodes[childId])
+                    options: currentNode.children.map(childId => ({ id: childId, ...chatbotData.nodes[childId] }))
                 };
                 setMessages(prev => [...prev, sparkyMessage]);
                 setIsThinking(false);
-            }, 1000); // 1 second delay
+            }, 1000);
         }
     }, [currentNodeId]);
     
-    // Scroll to bottom when new messages are added
     useEffect(() => {
         scrollToBottom();
     }, [messages, isThinking]);
 
     const handleAnswerClick = (option) => {
-        // Add the user's choice to the message history
+        if (!option.children || option.children.length === 0) return;
+
         const userMessage = { sender: 'user', content: option.content };
         setMessages(prev => [...prev, userMessage]);
 
-        // Find the next question node
-        const nextNodeId = chatbotData.nodes[option.children[0]].id;
+        // === THE FIX IS HERE ===
+        // The next node's ID is directly in the answer's 'children' array.
+        const nextNodeId = option.children[0];
         setCurrentNodeId(nextNodeId);
     };
 
@@ -52,14 +49,12 @@ const AskAiPage = () => {
         <div className="flex flex-col h-full max-w-4xl mx-auto p-6 md:p-10">
             <h1 className="text-3xl font-bold mb-4 text-gray-800">Հարցրու Սպարկիին</h1>
             
-            {/* Chat History Area */}
             <div className="flex-1 bg-white rounded-lg shadow p-4 overflow-y-auto mb-4 space-y-4">
                 {messages.map((msg, index) => (
                     <div key={index} className={`flex gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        {msg.sender === 'sparky' && <img src="/dragon1.png" alt="Sparky" className="w-10 h-10 rounded-full"/>}
+                        {msg.sender === 'sparky' && <img src="/dragon1.png" alt="Sparky" className="w-10 h-10 h-10 rounded-full"/>}
                         <div className={`p-3 rounded-lg max-w-lg ${msg.sender === 'user' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
                             <p>{msg.content}</p>
-                            {/* Display answer options as buttons */}
                             {msg.sender === 'sparky' && msg.options && (
                                 <div className="mt-4 space-y-2">
                                     {msg.options.map(option => (
@@ -77,7 +72,6 @@ const AskAiPage = () => {
                     </div>
                 ))}
                 
-                {/* Thinking Indicator */}
                 {isThinking && (
                     <div className="flex gap-3">
                         <img src="/dragon1.png" alt="Sparky" className="w-10 h-10 rounded-full"/>
