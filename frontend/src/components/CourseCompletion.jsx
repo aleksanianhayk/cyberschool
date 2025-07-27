@@ -8,41 +8,54 @@ import { useWindowSize } from 'react-use';
 const CourseCompletion = ({ courseTitle }) => {
     const { width, height } = useWindowSize();
 
-    // Emojis for the "rain" effect
+    // Emojis for the separate "rain" effect
     const emojiPieces = ['🎉', '✨', '🎓', '🚀', '👍', '✅', '🏆', '💯'];
-    
-    // Custom drawing function for emojis with random sizes
     const drawEmoji = (ctx) => {
         const fontSize = Math.random() * 20 + 20; // Emojis between 20px and 40px
         ctx.font = `${fontSize}px serif`;
         ctx.fillText(emojiPieces[Math.floor(Math.random() * emojiPieces.length)], 0, 0);
     };
 
+    // Custom drawing function for long, ribbon-like confetti
+    const drawRibbon = (ctx) => {
+        const a = Math.random() * 2 * Math.PI;
+        const x = Math.cos(a);
+        const y = Math.sin(a);
+        ctx.beginPath();
+        ctx.moveTo(x * -5, y * -2);
+        ctx.lineTo(x * 5, y * 2);
+        ctx.lineTo(x * 2, y * 5);
+        ctx.lineTo(x * -2, y * -5);
+        ctx.closePath();
+        ctx.fill();
+    };
+
+
     return (
         <div className="relative w-full">
-            {/* === LAYER 1: A LOT of traditional confetti === */}
-            {/* This layer creates a dense shower of colorful ribbons and shapes. */}
+            {/* === LAYER 1: A LOT of traditional, varied confetti === */}
             <Confetti
                 width={width}
                 height={height}
-                numberOfPieces={600} // A lot of confetti
+                numberOfPieces={800} // A lot of confetti for a big celebration
                 recycle={false}
-                gravity={0.12}
-                wind={0.01}
-                tweenDuration={10000} // Fall slowly
+                gravity={0.1}
+                wind={0.05}
+                tweenDuration={12000} // Fall slowly for a longer effect
+                drawShape={drawRibbon} // Use the custom ribbon shape
+                colors={['#78C841', '#B4E50D', '#FF9B2F', '#FB4141', '#FFFFFF']}
             />
             
-            {/* === LAYER 2: Emoji Rain === */}
-            {/* This layer makes emojis fall straight down like rain, without spinning. */}
+            {/* === LAYER 2: Emoji Rain (Unchanged) === */}
             <Confetti
                 width={width}
                 height={height}
-                numberOfPieces={70} // A gentle rain of emojis
+                numberOfPieces={70}
                 recycle={false}
-                gravity={0.25} // Emojis fall a bit faster
-                angle={90} // Point them straight down
-                spread={80} // Spread them out horizontally
-                initialVelocityX={0} // No sideways initial push
+                gravity={0.25}
+                angle={90}
+                spread={80}
+                initialVelocityX={0}
                 drawShape={drawEmoji}
                 tweenDuration={8000}
             />
