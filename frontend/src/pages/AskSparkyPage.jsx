@@ -62,7 +62,7 @@ const AskSparkyPage = () => {
             <div className="flex-1 bg-white rounded-lg shadow p-4 overflow-y-auto mb-4 space-y-4">
                 {messages.map((msg, index) => (
                     <div key={index} className={`flex gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        {msg.sender === 'sparky' && <img src="/sparky_bot.png" alt="Sparky" className="w-10 h-10 rounded-full self-start"/>}
+                        {msg.sender === 'sparky' && <img src="/sparky_bot.png" alt="Sparky" className="w-20 h-20 rounded-full self-start"/>}
                         <div className={`p-3 rounded-lg max-w-lg ${msg.sender === 'user' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
                             <p className="whitespace-pre-wrap">{msg.content}</p>
                             {msg.sender === 'sparky' && msg.options && (
@@ -84,7 +84,7 @@ const AskSparkyPage = () => {
                 
                 {isThinking && (
                     <div className="flex gap-3">
-                        <img src="/sparky_bot_thinking.png" alt="Sparky" className="w-10 h-10 rounded-full"/>
+                        <img src="/sparky_bot_thinking.png" alt="Sparky" className="w-20 h-20 rounded-full"/>
                         <div className="p-3 rounded-lg bg-gray-200 text-gray-800 flex items-center gap-2">
                             <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
                             <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
