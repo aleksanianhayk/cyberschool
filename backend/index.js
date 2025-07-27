@@ -267,7 +267,7 @@ app.get("/api/courses/:courseIdString", verifyToken, async (req, res) => {
         const [courseRows] = await db.query("SELECT * FROM courses WHERE course_id_string = ? AND is_active = true", [courseIdString]);
         if (courseRows.length === 0) return res.status(404).json({ message: "Course not found." });
         const course = courseRows[0];
-        const [pages] = await db.query("SELECT * FROM pages WHERE course_id = ? ORDER BY page_number", [course.id]);
+        const [pages] = await db.query("SELECT id, course_id, page_number, title, is_completion_page FROM pages WHERE course_id = ? ORDER BY page_number", [course.id]);
         const pagesWithComponents = await Promise.all(pages.map(async (page) => {
             const [components] = await db.query("SELECT * FROM course_components WHERE page_id = ? ORDER BY order_index", [page.id]);
             return { ...page, components };
@@ -515,7 +515,7 @@ app.get("/api/admin/courses/:courseIdString", async (req, res) => {
         const [courseRows] = await db.query("SELECT * FROM courses WHERE course_id_string = ?", [courseIdString]);
         if (courseRows.length === 0) return res.status(404).json({ message: "Course not found." });
         const course = courseRows[0];
-        const [pages] = await db.query("SELECT * FROM pages WHERE course_id = ? ORDER BY page_number", [course.id]);
+        const [pages] = await db.query("SELECT id, course_id, page_number, title, is_completion_page FROM pages WHERE course_id = ? ORDER BY page_number", [course.id]);
         const pagesWithComponents = await Promise.all(pages.map(async (page) => {
             const [components] = await db.query("SELECT * FROM course_components WHERE page_id = ? ORDER BY order_index", [page.id]);
             return { ...page, components };
@@ -594,22 +594,30 @@ app.delete("/api/admin/pages/:pageId", async (req, res) => {
 
 app.put("/api/admin/pages/:pageId/components", async (req, res) => {
     const { pageId } = req.params;
-    const { components } = req.body;
+    // The frontend will now send the components AND the new flag
+    const { components, is_completion_page, title } = req.body; 
+    
     if (!Array.isArray(components)) return res.status(400).json({ message: "Components must be an array." });
+
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
+
+        // Update the page's title and completion status
+        await connection.query("UPDATE pages SET title = ?, is_completion_page = ? WHERE id = ?", [title, is_completion_page, pageId]);
+        
+        // Delete and re-insert components
         await connection.query("DELETE FROM course_components WHERE page_id = ?", [pageId]);
         if (components.length > 0) {
             const insertQuery = "INSERT INTO course_components (page_id, component_type, order_index, props) VALUES ?";
             const values = components.map((component, index) => [pageId, component.component_type, index, JSON.stringify(component.props)]);
             await connection.query(insertQuery, [values]);
         }
+        
         await connection.commit();
         res.status(200).json({ message: "Page saved successfully!" });
     } catch (error) {
         await connection.rollback();
-        console.error(`Error saving page ${pageId}:`, error);
         res.status(500).json({ message: "Failed to save page." });
     } finally {
         connection.release();

@@ -6,6 +6,8 @@ import axios from 'axios';
 import { AuthContext } from '../context/AuthContext.jsx';
 import * as CourseTools from '../components/CourseTools.jsx';
 import CourseCompletion from '../components/CourseCompletion.jsx';
+import Confetti from 'react-confetti';
+import { useWindowSize } from 'react-use';
 
 const API_URL = `${import.meta.env.VITE_API_URL}/api`;
 const interactiveToolTypes = ['MultipleChoice', 'TrueFalse', 'ChooseOne', 'SelectImage', 'FillInTheBlanks', 'Sequencing', 'Matching'];
@@ -23,6 +25,7 @@ const CoursePage = () => {
     const { courseIdString } = useParams();
     const { user } = useContext(AuthContext);
     const location = useLocation();
+    const { width, height } = useWindowSize();
     
     const [course, setCourse] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -32,6 +35,7 @@ const CoursePage = () => {
     const [highestPageIndex, setHighestPageIndex] = useState(-1);
     const [isCourseComplete, setIsCourseComplete] = useState(false);
     const [isCheckActive, setIsCheckActive] = useState(false);
+    const [pageResult, setPageResult] = useState(null);
     const [isNextButtonActive, setIsNextButtonActive] = useState(false);
     const interactiveComponentRefs = useRef([]);
 
@@ -65,6 +69,7 @@ const CoursePage = () => {
                 if (location.state?.restarted) {
                     setCurrentPage(0);
                 } else if (fetchedIndex > -1) {
+                    // If user has already completed the last page, show completion screen
                     if (fetchedIndex === courseData.pages.length - 1) {
                         setIsCourseComplete(true);
                         setCurrentPage(fetchedIndex);
@@ -93,6 +98,8 @@ const CoursePage = () => {
         const isPageCompleted = currentPage <= highestPageIndex;
 
         setIsNextButtonActive(!hasInteractiveTools || isPageCompleted);
+        setPageResult(isPageCompleted ? 'correct' : null);
+        setIsCheckActive(false);
         interactiveComponentRefs.current = [];
 
         if (!hasInteractiveTools && currentPage > highestPageIndex) {
@@ -120,10 +127,11 @@ const CoursePage = () => {
     };
 
     const handleInteraction = () => {
-        const isPageCompleted = currentPage <= highestPageIndex;
-        if (!isPageCompleted) {
+        if (pageResult !== 'correct') {
             setIsCheckActive(true);
-            interactiveComponentRefs.current.forEach(ref => ref?.reset());
+            if (pageResult === 'incorrect') {
+                interactiveComponentRefs.current.forEach(ref => ref?.reset());
+            }
         }
     };
 
@@ -136,6 +144,9 @@ const CoursePage = () => {
             }
         });
         
+        setPageResult(allCorrect ? 'correct' : 'incorrect');
+        setIsCheckActive(false);
+        
         if (allCorrect) {
             setIsNextButtonActive(true);
             saveProgress(currentPage);
@@ -146,10 +157,6 @@ const CoursePage = () => {
     if (error) return <div className="text-center p-10 text-red-500">{error}</div>;
     if (!course) return <div className="text-center p-10">Դասընթացը չի գտնվել։</div>;
 
-    if (isCourseComplete) {
-        return <CourseCompletion courseTitle={course.title} />;
-    }
-
     const totalPages = course.pages.length;
     const progressPercentage = totalPages > 0 ? ((highestPageIndex + 1) / totalPages) * 100 : 0;
     const currentPagePercentage = isCourseComplete ? 100 : (totalPages > 0 ? ((currentPage + 1) / totalPages) * 100 : 0);
@@ -159,6 +166,7 @@ const CoursePage = () => {
 
     return (
         <div className="w-full min-h-screen flex flex-col bg-gray-100">
+            {isCourseComplete && <Confetti width={width} height={height} recycle={false} numberOfPieces={400} />}
             <header className="w-full bg-white shadow-md sticky top-0 z-10 p-4">
                 <div className="max-w-5xl mx-auto">
                     <div className="flex justify-between items-center">
@@ -184,34 +192,40 @@ const CoursePage = () => {
 
             <main className="flex-grow flex items-start justify-center p-4 sm:p-8">
                 <div className="w-full max-w-4xl mx-auto">
-                    <div className="bg-white p-6 sm:p-10 rounded-xl shadow-lg">
-                        {pageContent ? (
-                            pageContent.components.map((component, index) => (
-                                <ComponentRenderer 
-                                    key={component.id || index} 
-                                    componentData={component} 
-                                    onInteract={handleInteraction}
-                                    isCompleted={isPageCompleted}
-                                    ref={el => interactiveComponentRefs.current[index] = el}
-                                />
-                            ))
-                        ) : (
-                            <CourseTools.PlainText text="Այս դասընթացում դեռ էջեր չկան։" />
-                        )}
-                    </div>
+                    {isCourseComplete ? (
+                        <CourseCompletion courseTitle={course.title} />
+                    ) : (
+                        <>
+                            <div className="bg-white p-6 sm:p-10 rounded-xl shadow-lg">
+                                {pageContent ? (
+                                    pageContent.components.map((component, index) => (
+                                        <ComponentRenderer 
+                                            key={component.id || index} 
+                                            componentData={component} 
+                                            onInteract={handleInteraction}
+                                            isCompleted={isPageCompleted}
+                                            ref={el => interactiveComponentRefs.current[index] = el}
+                                        />
+                                    ))
+                                ) : (
+                                    <CourseTools.PlainText text="Այս դասընթացում դեռ էջեր չկան։" />
+                                )}
+                            </div>
 
-                    {hasInteractiveTools && (
-                         <div className="mt-6 p-4 h-24 flex items-center justify-center">
-                            {isPageCompleted ? (
-                                <button onClick={goToNext} className="px-10 py-4 text-xl font-bold bg-lime-600 text-white rounded-lg shadow-lg hover:bg-lime-700 transition-all transform hover:scale-105">
-                                    Շարունակել →
-                                </button>
-                            ) : (
-                                <button onClick={handleCheck} disabled={!isCheckActive} className="px-10 py-4 text-xl font-bold bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
-                                    Ստուգել
-                                </button>
+                            {hasInteractiveTools && !isPageCompleted && (
+                                <div className="mt-6 p-4 h-24 flex items-center justify-center">
+                                    {isNextButtonActive ? (
+                                        <div className="text-2xl font-bold p-4 rounded-lg bg-green-100 text-green-700">
+                                            Հիանալի է։ Այժմ կարող եք շարունակել։
+                                        </div>
+                                    ) : (
+                                        <button onClick={handleCheck} disabled={!isCheckActive} className="px-10 py-4 text-xl font-bold bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                                            Ստուգել
+                                        </button>
+                                    )}
+                                </div>
                             )}
-                        </div>
+                        </>
                     )}
                 </div>
             </main>

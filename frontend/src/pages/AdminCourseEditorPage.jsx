@@ -250,6 +250,14 @@ const PageView = ({ page, onUpdate, onPageDeleted }) => {
         onUpdate(page.id, [...(page.components || []), newComponent]);
     };
 
+    const handleTitleChange = (newTitle) => {
+        onUpdate(page.id, { ...page, title: newTitle });
+    };
+
+    const handleCompletionToggle = (isChecked) => {
+        onUpdate(page.id, { ...page, is_completion_page: isChecked });
+    };
+
     const handleUpdateComponent = (index, newProps) => {
         const updatedComponents = page.components.map((c, i) => i === index ? { ...c, props: newProps } : c);
         onUpdate(page.id, updatedComponents);
@@ -263,7 +271,12 @@ const PageView = ({ page, onUpdate, onPageDeleted }) => {
     const handleSavePage = async () => {
         try {
             const token = localStorage.getItem('cyberstorm_token');
-            await axios.put(`${API_URL}/pages/${page.id}/components`, { components: page.components || [] }, { headers: { Authorization: `Bearer ${token}` } });
+            // Now we send the entire page object, including the new flag
+            await axios.put(`${API_URL}/pages/${page.id}/components`, {
+                title: page.title,
+                is_completion_page: !!page.is_completion_page,
+                components: page.components || []
+            }, { headers: { Authorization: `Bearer ${token}` } });
             setNotification({ type: 'success', message: 'Էջը հաջողությամբ պահպանվեց։' });
         } catch (err) {
             setNotification({ type: 'error', message: 'Էջը պահպանել չհաջողվեց։' });
@@ -285,7 +298,23 @@ const PageView = ({ page, onUpdate, onPageDeleted }) => {
     return (
         <div className="max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-lg shadow-md sticky top-10 z-20">
-                <h1 className="text-2xl font-bold">Էջ {page.page_number} - ի խմբագրում</h1>
+                <div className="flex-grow">
+                    <input 
+                        type="text" 
+                        value={page.title || `Page ${page.page_number}`}
+                        onChange={(e) => handleTitleChange(e.target.value)}
+                        className="text-2xl font-bold border-b-2 border-transparent focus:border-indigo-500 outline-none w-full"
+                    />
+                    <label className="flex items-center gap-2 mt-2 text-sm text-gray-600">
+                        <input 
+                            type="checkbox"
+                            checked={!!page.is_completion_page}
+                            onChange={(e) => handleCompletionToggle(e.target.checked)}
+                            className="h-4 w-4 rounded"
+                        />
+                        Նշել որպես դասընթացի ավարտական էջ
+                    </label>
+                </div>
                 <div>
                     <button onClick={handleSavePage} className="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 mr-4">Պահպանել էջը</button>
                     <button onClick={() => setDeleteTarget(page)} className="px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700">Ջնջել էջը</button>
