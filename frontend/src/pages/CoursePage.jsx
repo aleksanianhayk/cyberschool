@@ -65,17 +65,8 @@ const CoursePage = () => {
                 const fetchedIndex = progressRes.data.highestPageIndex;
                 setHighestPageIndex(fetchedIndex);
 
-                if (location.state?.restarted) {
-                    setCurrentPage(0);
-                } else if (fetchedIndex > -1) {
-                    if (fetchedIndex === courseData.pages.length - 1) {
-                        setIsCourseComplete(true);
-                        setCurrentPage(fetchedIndex);
-                    } else {
-                        const startPage = Math.min(fetchedIndex + 1, courseData.pages.length - 1);
-                        setCurrentPage(startPage);
-                    }
-                }
+                setCurrentPage(0);
+
 
             } catch (err) {
                 setError("Could not load course data.");
