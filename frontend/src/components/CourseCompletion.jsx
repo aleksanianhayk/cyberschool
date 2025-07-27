@@ -17,7 +17,7 @@ const CourseCompletion = ({ courseTitle }) => {
                 numberOfPieces={8000} // A lot of confetti for a big celebration
                 recycle={false}
                 gravity={0.1}      // Makes confetti fall slower
-                wind={0.05}     // A gentle breeze
+                wind={-0.05}     // A gentle breeze
                 initialVelocityX={{ min: -10, max: 10 }} // Spread out horizontally
                 initialVelocityY={{ min: -15, max: 5 }}  // Shoot upwards initially
                 tweenDuration={10000} // Linger for a long time (15 seconds)
