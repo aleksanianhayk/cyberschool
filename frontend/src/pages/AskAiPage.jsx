@@ -1,84 +1,96 @@
 // /frontend/src/pages/AskAiPage.jsx
 
-import React, { useState, useContext, useEffect, useRef } from 'react';
-import ReactMarkdown from 'react-markdown';
-import axios from 'axios';
-import { AuthContext } from '../context/AuthContext.jsx';
-
-const API_URL = `${import.meta.env.VITE_API_URL}/api`;
+import React, { useState, useEffect, useRef } from 'react';
+import chatbotData from '../data/chatbotData.json';
 
 const AskAiPage = () => {
-    const { user } = useContext(AuthContext);
-    const [prompt, setPrompt] = useState('');
     const [messages, setMessages] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const chatEndRef = useRef(null);
+    const [currentNodeId, setCurrentNodeId] = useState(chatbotData.startNodeId);
+    const [isThinking, setIsThinking] = useState(true);
+    const messagesEndRef = useRef(null);
 
+    // Function to scroll to the bottom of the chat
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    // This effect runs whenever the current node changes
     useEffect(() => {
-        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!prompt.trim() || loading || !user) return;
-
-        const userMessage = { sender: 'user', text: prompt };
-        setMessages(prev => [...prev, userMessage]);
-        setLoading(true);
-        setPrompt('');
-
-        try {
-            const res = await axios.post(`${API_URL}/ask-ai`, { prompt, user });
-            const aiText = res?.data?.response;
-            if (aiText) {
-                const aiMessage = { sender: 'ai', text: aiText };
-                setMessages(prev => [...prev, aiMessage]);
-            } else {
-                throw new Error("Invalid response from server");
-            }
-        } catch (error) {
-            const errorMessageText = "Ներողություն, սխալ առաջացավ։ Խնդրում եմ փորձել մի փոքր ուշ։";
-            const errorMessage = { sender: 'ai', text: errorMessageText };
-            setMessages(prev => [...prev, errorMessage]);
-            console.error("Failed to fetch AI response:", error);
-        } finally {
-            setLoading(false);
+        const currentNode = chatbotData.nodes[currentNodeId];
+        if (currentNode && currentNode.type === 'question') {
+            setIsThinking(true);
+            
+            // Simulate "thinking" delay
+            setTimeout(() => {
+                const sparkyMessage = {
+                    sender: 'sparky',
+                    content: currentNode.content,
+                    options: currentNode.children.map(childId => chatbotData.nodes[childId])
+                };
+                setMessages(prev => [...prev, sparkyMessage]);
+                setIsThinking(false);
+            }, 1000); // 1 second delay
         }
+    }, [currentNodeId]);
+    
+    // Scroll to bottom when new messages are added
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages, isThinking]);
+
+    const handleAnswerClick = (option) => {
+        // Add the user's choice to the message history
+        const userMessage = { sender: 'user', content: option.content };
+        setMessages(prev => [...prev, userMessage]);
+
+        // Find the next question node
+        const nextNodeId = chatbotData.nodes[option.children[0]].id;
+        setCurrentNodeId(nextNodeId);
     };
 
     return (
         <div className="flex flex-col h-full max-w-4xl mx-auto p-6 md:p-10">
-            <h2 className="text-3xl font-bold mb-4 text-gray-800">Հարցրու AI-ին</h2>
+            <h1 className="text-3xl font-bold mb-4 text-gray-800">Հարցրու Սպարկիին</h1>
             
             {/* Chat History Area */}
             <div className="flex-1 bg-white rounded-lg shadow p-4 overflow-y-auto mb-4 space-y-4">
                 {messages.map((msg, index) => (
-                    <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div key={index} className={`flex gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        {msg.sender === 'sparky' && <img src="/dragon1.png" alt="Sparky" className="w-10 h-10 rounded-full"/>}
                         <div className={`p-3 rounded-lg max-w-lg ${msg.sender === 'user' ? 'bg-indigo-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
-                            <div className="prose prose-sm max-w-none">
-                                <ReactMarkdown children={msg.text || ""} />
-                            </div>
+                            <p>{msg.content}</p>
+                            {/* Display answer options as buttons */}
+                            {msg.sender === 'sparky' && msg.options && (
+                                <div className="mt-4 space-y-2">
+                                    {msg.options.map(option => (
+                                        <button 
+                                            key={option.id} 
+                                            onClick={() => handleAnswerClick(option)}
+                                            className="block w-full text-left p-2 bg-white rounded-md border border-indigo-300 text-indigo-700 font-semibold hover:bg-indigo-50"
+                                        >
+                                            {option.content}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
-                {loading && <div className="text-center text-gray-500">AI-ն մտածում է...</div>}
-                <div ref={chatEndRef} />
-            </div>
+                
+                {/* Thinking Indicator */}
+                {isThinking && (
+                    <div className="flex gap-3">
+                        <img src="/dragon1.png" alt="Sparky" className="w-10 h-10 rounded-full"/>
+                        <div className="p-3 rounded-lg bg-gray-200 text-gray-800 flex items-center gap-2">
+                            <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+                            <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                            <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                        </div>
+                    </div>
+                )}
 
-            {/* Text Input Form */}
-            <form onSubmit={handleSubmit} className="flex gap-4">
-                <input
-                    type="text"
-                    value={prompt}
-                    onChange={(e) => setPrompt(e.target.value)}
-                    placeholder="Հարցրեք ինչ-որ բան..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    disabled={loading}
-                />
-                <button type="submit" className="bg-indigo-600 text-white font-semibold px-6 py-2 rounded-full hover:bg-indigo-700 disabled:bg-indigo-300 transition-colors" disabled={loading}>
-                    Ուղարկել
-                </button>
-            </form>
+                <div ref={messagesEndRef} />
+            </div>
         </div>
     );
 };

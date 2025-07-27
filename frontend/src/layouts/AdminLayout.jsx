@@ -32,6 +32,7 @@ const AdminLayout = () => {
                     <AdminNavLink to="/admin/courses" icon={<CoursesIcon />} label="Դասընթացներ" isOpen={isSidebarOpen} />
                     <AdminNavLink to="/admin/meetups" icon={<MeetupIcon />} label="Meetups" isOpen={isSidebarOpen} />
                     <AdminNavLink to="/admin/teacher-guide" icon={<GuideIcon />} label="Ուղեցույց" isOpen={isSidebarOpen} />
+                    <AdminNavLink to="/admin/chatbot" icon={<ChatbotIcon />} label="Chatbot Editor" isOpen={isSidebarOpen} />
                     <AdminNavLink to="/admin/users" icon={<UsersIcon />} label="Օգտատերեր" isOpen={isSidebarOpen} />
                 </nav>
 
