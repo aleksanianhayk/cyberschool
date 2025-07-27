@@ -389,6 +389,28 @@ app.get("/api/teacher-guide", verifyToken, async (req, res) => {
     }
 });
 
+
+// --- NEW CHATBOT APIS ---
+app.get("/api/chatbot/start", verifyToken, async (req, res) => {
+    try {
+        const [nodes] = await db.query("SELECT * FROM chatbot_nodes WHERE parent_id IS NULL ORDER BY order_index ASC");
+        res.status(200).json(nodes);
+    } catch (error) {
+        res.status(500).json({ message: "Failed to start chat." });
+    }
+});
+
+app.get("/api/chatbot/node/:id", verifyToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [nodes] = await db.query("SELECT * FROM chatbot_nodes WHERE parent_id = ? ORDER BY order_index ASC", [id]);
+        res.status(200).json(nodes);
+    } catch (error) {
+        res.status(500).json({ message: "Failed to get next node." });
+    }
+});
+
+
 // ===================================================================
 // === ADMIN PANEL APIS ==============================================
 // ===================================================================
@@ -789,6 +811,53 @@ app.delete("/api/admin/users/:id",verifyToken, isAdminOrSuperAdmin, async (req, 
     }
 });
 
+// --- NEW ADMIN CHATBOT APIS ---
+app.get("/api/admin/chatbot", async (req, res) => {
+    try {
+        const [flatList] = await db.query("SELECT * FROM chatbot_nodes ORDER BY parent_id ASC, order_index ASC");
+        const buildTree = (list, parentId = null) => {
+            return list
+                .filter(item => item.parent_id === parentId)
+                .map(item => ({ ...item, children: buildTree(list, item.id) }));
+        };
+        const nestedTree = buildTree(flatList);
+        res.status(200).json(nestedTree);
+    } catch (error) {
+        res.status(500).json({ message: "Failed to fetch chatbot tree." });
+    }
+});
+
+app.post("/api/admin/chatbot", async (req, res) => {
+    try {
+        const { parent_id, node_type, content, order_index } = req.body;
+        const query = "INSERT INTO chatbot_nodes (parent_id, node_type, content, order_index) VALUES (?, ?, ?, ?)";
+        const [result] = await db.query(query, [parent_id || null, node_type, content, order_index]);
+        res.status(201).json({ id: result.insertId, ...req.body });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to create chatbot node." });
+    }
+});
+
+app.put("/api/admin/chatbot/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { content } = req.body;
+        await db.query("UPDATE chatbot_nodes SET content = ? WHERE id = ?", [content, id]);
+        res.status(200).json({ message: "Node updated successfully." });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to update node." });
+    }
+});
+
+app.delete("/api/admin/chatbot/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.query("DELETE FROM chatbot_nodes WHERE id = ?", [id]);
+        res.status(200).json({ message: "Node deleted successfully." });
+    } catch (error) {
+        res.status(500).json({ message: "Failed to delete node." });
+    }
+});
 
 
 
