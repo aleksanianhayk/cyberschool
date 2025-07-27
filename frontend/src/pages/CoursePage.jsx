@@ -67,12 +67,13 @@ const CoursePage = () => {
                 } else if (fetchedIndex > -1) {
                     if (fetchedIndex === courseData.pages.length - 1) {
                         setIsCourseComplete(true);
-                        setCurrentPage(fetchedIndex); // Go to the last page to show full progress
+                        setCurrentPage(fetchedIndex);
                     } else {
                         const startPage = Math.min(fetchedIndex + 1, courseData.pages.length - 1);
                         setCurrentPage(startPage);
                     }
                 }
+
             } catch (err) {
                 setError("Could not load course data.");
             } finally {
@@ -111,7 +112,7 @@ const CoursePage = () => {
     
     const goToPrev = () => {
         if (isCourseComplete) {
-            setIsCourseComplete(false); // Exit completion view and go to last page
+            setIsCourseComplete(false);
             setCurrentPage(course.pages.length - 1);
         } else if (currentPage > 0) {
             setCurrentPage(prevPage => prevPage - 1);
@@ -145,6 +146,10 @@ const CoursePage = () => {
     if (error) return <div className="text-center p-10 text-red-500">{error}</div>;
     if (!course) return <div className="text-center p-10">Դասընթացը չի գտնվել։</div>;
 
+    if (isCourseComplete) {
+        return <CourseCompletion courseTitle={course.title} />;
+    }
+
     const totalPages = course.pages.length;
     const progressPercentage = totalPages > 0 ? ((highestPageIndex + 1) / totalPages) * 100 : 0;
     const currentPagePercentage = isCourseComplete ? 100 : (totalPages > 0 ? ((currentPage + 1) / totalPages) * 100 : 0);
@@ -157,7 +162,7 @@ const CoursePage = () => {
             <header className="w-full bg-white shadow-md sticky top-0 z-10 p-4">
                 <div className="max-w-5xl mx-auto">
                     <div className="flex justify-between items-center">
-                         <Link to="/learn" className="text-sm text-indigo-600 hover:underline">← Վերադառնալ դասընթացներին</Link>
+                         <Link to="/learn" className="text-sm text-green-600 hover:underline">← Վերադառնալ</Link>
                          <h2 className="text-xl font-bold text-center">{course.title}</h2>
                          <div className="w-1/4"></div>
                     </div>
@@ -167,7 +172,7 @@ const CoursePage = () => {
                             <div className="bg-green-300 h-4 rounded-full transition-all duration-300" style={{ width: `${progressPercentage}%` }}></div>
                             <div className="absolute top-0 left-0 bg-indigo-600 h-4 rounded-full transition-all duration-300" style={{ width: `${currentPagePercentage}%` }}></div>
                         </div>
-                        <button onClick={goToNext} disabled={!isNextButtonActive} className="px-4 py-2 bg-indigo-600 text-white rounded disabled:opacity-50 disabled:bg-gray-400">
+                        <button onClick={goToNext} disabled={!isNextButtonActive} className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50 disabled:bg-gray-400">
                             {currentPage === totalPages - 1 ? 'Ավարտել' : 'Հաջորդ'}
                         </button>
                     </div>
@@ -178,41 +183,37 @@ const CoursePage = () => {
             </header>
 
             <main className="flex-grow flex items-start justify-center p-4 sm:p-8">
-                {isCourseComplete ? (
-                    <CourseCompletion courseTitle={course.title} />
-                ) : (
-                    <div className="w-full max-w-4xl mx-auto">
-                        <div className="bg-white p-6 sm:p-10 rounded-xl shadow-lg">
-                            {pageContent ? (
-                                pageContent.components.map((component, index) => (
-                                    <ComponentRenderer 
-                                        key={component.id || index} 
-                                        componentData={component} 
-                                        onInteract={handleInteraction}
-                                        isCompleted={isPageCompleted}
-                                        ref={el => interactiveComponentRefs.current[index] = el}
-                                    />
-                                ))
-                            ) : (
-                                <CourseTools.PlainText text="Այս դասընթացում դեռ էջեր չկան։" />
-                            )}
-                        </div>
-
-                        {hasInteractiveTools && !isPageCompleted && (
-                             <div className="mt-6 p-4 h-24 flex items-center justify-center">
-                                {isNextButtonActive ? (
-                                    <div className="text-2xl font-bold p-4 rounded-lg bg-green-100 text-green-700">
-                                        Հիանալի է։ Այժմ կարող եք շարունակել։
-                                    </div>
-                                ) : (
-                                    <button onClick={handleCheck} disabled={!isCheckActive} className="px-10 py-4 text-xl font-bold bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
-                                        Ստուգել
-                                    </button>
-                                )}
-                            </div>
+                <div className="w-full max-w-4xl mx-auto">
+                    <div className="bg-white p-6 sm:p-10 rounded-xl shadow-lg">
+                        {pageContent ? (
+                            pageContent.components.map((component, index) => (
+                                <ComponentRenderer 
+                                    key={component.id || index} 
+                                    componentData={component} 
+                                    onInteract={handleInteraction}
+                                    isCompleted={isPageCompleted}
+                                    ref={el => interactiveComponentRefs.current[index] = el}
+                                />
+                            ))
+                        ) : (
+                            <CourseTools.PlainText text="Այս դասընթացում դեռ էջեր չկան։" />
                         )}
                     </div>
-                )}
+
+                    {hasInteractiveTools && (
+                         <div className="mt-6 p-4 h-24 flex items-center justify-center">
+                            {isPageCompleted ? (
+                                <button onClick={goToNext} className="px-10 py-4 text-xl font-bold bg-lime-600 text-white rounded-lg shadow-lg hover:bg-lime-700 transition-all transform hover:scale-105">
+                                    Շարունակել →
+                                </button>
+                            ) : (
+                                <button onClick={handleCheck} disabled={!isCheckActive} className="px-10 py-4 text-xl font-bold bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed">
+                                    Ստուգել
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
             </main>
         </div>
     );
