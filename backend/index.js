@@ -10,6 +10,8 @@ const jwt = require('jsonwebtoken');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
+const path = require('path'); // New import for handling file paths
+
 
 dotenv.config();
 
@@ -27,6 +29,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use('/static', express.static(path.join(__dirname, 'public')));
 
 // Database Connection
 const db = mysql.createPool({

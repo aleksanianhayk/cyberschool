@@ -6,6 +6,7 @@ import { AuthContext } from "../context/AuthContext.jsx";
 import { useNavigate, useLocation } from "react-router-dom";
 import { jwtDecode } from 'jwt-decode';
 
+
 const API_URL = `${import.meta.env.VITE_API_URL}/api`;
 
 const AuthenticationPage = () => {
@@ -196,6 +197,7 @@ const RegisterForm = () => {
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -226,7 +228,8 @@ const RegisterForm = () => {
     try {
       await axios.post(`${API_URL}/register`, submissionData);
       setSuccess("Գրանցումը հաջողվեց։ Խնդրում ենք մուտք գործել։");
-      setFormData({ name: "", email: "", password: "", phone: "", gender: "male", school_name: "", role: "student", grade: "2" });
+        setFormData({ name: "", email: "", password: "", phone: "", gender: "male", school_name: "", role: "student", grade: "2" });
+        setPrivacyAccepted(false); // Reset checkbox
     } catch (err) {
       setError(err.response?.data?.message || "Գրանցման սխալ։ Խնդրում ենք փորձել կրկին։");
     }
@@ -284,8 +287,32 @@ const RegisterForm = () => {
           </select>
         </div>
       )}
-
-      <button type="submit" className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+<div className="flex items-center gap-2">
+        <input
+            type="checkbox"
+            id="privacy"
+            checked={privacyAccepted}
+            onChange={(e) => setPrivacyAccepted(e.target.checked)}
+            className="h-4 w-4 rounded"
+            required
+        />
+        <label htmlFor="privacy" className="text-sm text-gray-600">
+            Ես կարդացել եմ և համաձայն եմ{" "}
+            <a 
+                href={`${import.meta.env.VITE_API_URL}/static/Privacy Policy.pdf`} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-indigo-600 hover:underline"
+            >
+                Գաղտնիության քաղաքականությանը
+            </a>.
+        </label>
+      </div>
+      <button
+        type="submit"
+        disabled={!privacyAccepted} // Button is disabled until checkbox is checked
+        className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-gray-400"
+      >
         Գրանցվել
       </button>
     </form>

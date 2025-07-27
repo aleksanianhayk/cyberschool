@@ -461,9 +461,9 @@ const LandingPage = () => {
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white">
-                    Գաղտնիության քաղաքականություն
-                  </a>
+                    <a href={`${import.meta.env.VITE_API_URL}/static/PrivacyPolicy.pdf`} target="_blank"  rel="noopener noreferrer" className="hover:text-white">
+                        Գաղտնիության քաղաքականություն
+                    </a>
                 </li>
               </ul>
             </div>
