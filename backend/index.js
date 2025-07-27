@@ -329,16 +329,29 @@ app.get("/api/meetups", async (req, res) => {
         res.status(500).json({ message: "Failed to fetch meetups." });
     }
 });
-
-app.get("/api/admin/meetups/:meetupIdString", async (req, res) => {
+app.get("/api/meetups/:meetupIdString", async (req, res) => {
     try {
         const { meetupIdString } = req.params;
+        const { userId } = req.query; // userId is optional
+
         const [meetupRows] = await db.query("SELECT * FROM meetups WHERE meetup_id_string = ?", [meetupIdString]);
         if (meetupRows.length === 0) return res.status(404).json({ message: "Meetup not found." });
         const meetup = meetupRows[0];
+
         const [speakers] = await db.query("SELECT * FROM meetup_speakers WHERE meetup_id = ?", [meetup.id]);
-        res.status(200).json({ ...meetup, speakers});
+        const [comments] = await db.query("SELECT c.*, u.name as author_name FROM meetup_comments c JOIN users u ON c.user_id = u.id WHERE c.meetup_id = ? ORDER BY c.created_at DESC", [meetup.id]);
+        
+        let isRegistered = false;
+        if (userId) {
+            const [regRows] = await db.query("SELECT id FROM meetup_registrations WHERE user_id = ? AND meetup_id = ?", [userId, meetup.id]);
+            isRegistered = regRows.length > 0;
+        }
+
+        if (!isRegistered) delete meetup.join_url;
+        
+        res.status(200).json({ ...meetup, speakers, comments, isRegistered });
     } catch (error) {
+        console.error("Error fetching meetup details:", error);
         res.status(500).json({ message: "Failed to fetch meetup details." });
     }
 });

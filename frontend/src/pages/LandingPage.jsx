@@ -113,7 +113,7 @@ const LandingPage = () => {
                     --brand-light-green: #f0fdf4;
                 }
                 body { font-family: 'Inter', sans-serif; }
-                .hero-section { background-color: var(--brand-dark); }
+                .hero-section { background-color: cadetblue; }
                 .highlight { color: var(--brand-lime); }
                 .btn-primary { background-color: var(--brand-orange); color: white; }
                 .btn-primary:hover { background-color: #E68A2A; }
