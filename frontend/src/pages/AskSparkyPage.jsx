@@ -63,7 +63,7 @@ const AskSparkyPage = () => {
                 {messages.map((msg, index) => (
                     <div key={index} className={`flex gap-3 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                         {msg.sender === 'sparky' && <img src="/sparky_bot.png" alt="Sparky" className="w-20 h-20 rounded-full self-start"/>}
-                        <div className={`p-3 rounded-lg max-w-lg ${msg.sender === 'user' ? 'bg-lime-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
+                        <div className={`p-3 rounded-lg max-w-lg ${msg.sender === 'user' ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-800'}`}>
                             <p className="whitespace-pre-wrap">{msg.content}</p>
                             {msg.sender === 'sparky' && msg.options && (
                                 <div className="mt-4 space-y-2">
@@ -71,7 +71,7 @@ const AskSparkyPage = () => {
                                         <button 
                                             key={i} 
                                             onClick={() => handleOptionClick(option)}
-                                            className="block w-full text-left p-2 bg-white rounded-md border border-lime-300 text-lime-700 font-semibold hover:bg-lime-50"
+                                            className="block w-full text-left p-2 bg-white rounded-md border border-emerald-300 text-emerald-700 font-semibold hover:bg-emerald-50"
                                         >
                                             {option.text}
                                         </button>
