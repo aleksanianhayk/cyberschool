@@ -38,7 +38,7 @@ const UserLayout = () => {
             {/* Sidebar */}
             <aside className={`fixed top-0 left-0 h-full z-40 flex flex-col bg-white shadow-xl transition-all duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'w-64' : '-translate-x-full md:w-20'}`}>
                 <div className="flex items-center justify-between p-4 border-b h-16">
-                    <h1 className={`text-xl font-bold text-green-600 whitespace-nowrap transition-opacity ${isSidebarOpen ? 'opacity-100' : 'md:opacity-0'}`}>CyberSchool</h1>
+                    <h1 className={`text-xl font-bold text-green-600 whitespace-nowrap transition-opacity ${isSidebarOpen ? 'visible' : 'md:hidden'}`}>CyberSchool</h1>
                     {/* This button is only visible on desktop and controls folding */}
                     <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 rounded-lg hover:bg-gray-200 hidden md:block">
                         <CollapseIcon />
@@ -66,7 +66,7 @@ const UserLayout = () => {
             {/* Main Content */}
             <main className="flex-1 flex flex-col overflow-y-auto">
                 {/* Top bar for mobile view with hamburger menu */}
-                <div className="md:hidden flex justify-between items-center bg-white p-4 shadow-md sticky top-0 z-40">
+                <div className="md:hidden flex justify-between items-center bg-white p-4 shadow-md sticky top-0 z-30">
                     <h1 className="text-xl font-bold text-green-600">CyberSchool</h1>
                     <button onClick={() => setIsSidebarOpen(true)}>
                         <MenuIcon />
