@@ -818,13 +818,13 @@ app.post("/api/users/resend-verification", verifyToken, async (req, res) => {
             [userId, token, expires]
         );
 
-        const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+        const verificationUrl = `https://www.cyberschool.space/verify-email?token=${token}`;
         
         const mailOptions = {
-            from: '"CyberStorm" <cyberschool.space@gmail.com>',
+            from: '"CyberSchool" <cyberschool.space@gmail.com>',
             to: userEmail,
             subject: 'Verify Your Email Address',
-            html: `<h1>Welcome to CyberStorm!</h1><p>Please click the link below to verify your email address:</p><a href="${verificationUrl}">${verificationUrl}</a>`
+            html: `<h1>Welcome to CyberSchool!</h1><p>Please click the link below to verify your email address:</p><a href="${verificationUrl}">${verificationUrl}</a>`
         };
 
         await transporter.sendMail(mailOptions);
