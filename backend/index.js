@@ -10,8 +10,9 @@ const jwt = require('jsonwebtoken');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const speakeasy = require('speakeasy');
 const qrcode = require('qrcode');
-const path = require('path'); // New import for handling file paths
-
+const path = require('path');
+const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 
 dotenv.config();
 
@@ -101,7 +102,7 @@ app.post("/api/login", async (req, res) => {
         const { identifier, password } = req.body;
         const [results] = await db.query("SELECT * FROM users WHERE email = ? OR phone = ?", [identifier, identifier]);
         if (results.length === 0) return res.status(404).json({ message: "Հաշիվը չգտնվեց։" });
-        
+
         const user = results[0];
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(401).json({ message: "Սխալ ներմուծված տվյալներ։" });
@@ -109,9 +110,9 @@ app.post("/api/login", async (req, res) => {
         if (user.is_two_factor_enabled) {
             return res.status(200).json({ twoFactorRequired: true, userId: user.id });
         }
-        const payload = { 
-            id: user.id, 
-            name: user.name, 
+        const payload = {
+            id: user.id,
+            name: user.name,
             role: user.role,
             email: user.email,
             phone: user.phone,
@@ -132,13 +133,13 @@ app.post("/api/login/2fa/verify", async (req, res) => {
         const { userId, token } = req.body;
         const [userRows] = await db.query("SELECT * FROM users WHERE id = ?", [userId]);
         if (userRows.length === 0 || !userRows[0].two_factor_secret) return res.status(400).json({ message: "User not found or 2FA not set up." });
-        
+
         const user = userRows[0];
         const verified = speakeasy.totp.verify({ secret: user.two_factor_secret, encoding: 'base32', token });
         if (verified) {
-            const payload = { 
-                id: user.id, 
-                name: user.name, 
+            const payload = {
+                id: user.id,
+                name: user.name,
                 role: user.role,
                 email: user.email,
                 phone: user.phone,
@@ -226,9 +227,9 @@ app.post("/api/ask-ai", verifyToken, async (req, res) => {
 app.get("/api/sections-with-courses", verifyToken, async (req, res) => {
     try {
         const userRole = req.user.role; // Get role from the verified JWT
-        
+
         const [sections] = await db.query("SELECT * FROM sections ORDER BY order_index ASC, title ASC");
-        
+
         let coursesQuery = `
             SELECT c.*, COUNT(p.id) as page_count 
             FROM courses c 
@@ -243,7 +244,7 @@ app.get("/api/sections-with-courses", verifyToken, async (req, res) => {
         }
 
         coursesQuery += " GROUP BY c.id ORDER BY c.title ASC";
-        
+
         const [courses] = await db.query(coursesQuery);
         const coursesBySection = {};
         courses.forEach(course => {
@@ -343,7 +344,7 @@ app.get("/api/meetups/:meetupIdString", async (req, res) => {
 
         const [speakers] = await db.query("SELECT * FROM meetup_speakers WHERE meetup_id = ?", [meetup.id]);
         const [comments] = await db.query("SELECT c.*, u.name as author_name FROM meetup_comments c JOIN users u ON c.user_id = u.id WHERE c.meetup_id = ? ORDER BY c.created_at DESC", [meetup.id]);
-        
+
         let isRegistered = false;
         if (userId) {
             const [regRows] = await db.query("SELECT id FROM meetup_registrations WHERE user_id = ? AND meetup_id = ?", [userId, meetup.id]);
@@ -351,7 +352,7 @@ app.get("/api/meetups/:meetupIdString", async (req, res) => {
         }
 
         if (!isRegistered) delete meetup.join_url;
-        
+
         res.status(200).json({ ...meetup, speakers, comments, isRegistered });
     } catch (error) {
         console.error("Error fetching meetup details:", error);
@@ -531,7 +532,7 @@ app.put("/api/admin/courses/:id", async (req, res) => {
     try {
         const { id } = req.params;
         const { title, course_id_string, description, image_url, section_id, is_active, allowed_roles } = req.body;
-        
+
         if (!title || !course_id_string) return res.status(400).json({ message: "Title and Course ID are required." });
 
         const query = `
@@ -540,9 +541,9 @@ app.put("/api/admin/courses/:id", async (req, res) => {
             WHERE id = ?
         `;
         const rolesJson = JSON.stringify(allowed_roles || []);
-        
+
         const values = [title, course_id_string, description, image_url, section_id || null, is_active ? 1 : 0, rolesJson, id];
-        
+
         await db.query(query, values);
         res.status(200).json({ message: "Course updated successfully!" });
     } catch (error) {
@@ -594,26 +595,21 @@ app.delete("/api/admin/pages/:pageId", async (req, res) => {
 
 app.put("/api/admin/pages/:pageId/components", async (req, res) => {
     const { pageId } = req.params;
-    // The frontend will now send the components AND the new flag
-    const { components, is_completion_page, title } = req.body; 
-    
+    const { components, is_completion_page, title } = req.body;
+
     if (!Array.isArray(components)) return res.status(400).json({ message: "Components must be an array." });
 
     const connection = await db.getConnection();
     try {
         await connection.beginTransaction();
-
-        // Update the page's title and completion status
         await connection.query("UPDATE pages SET title = ?, is_completion_page = ? WHERE id = ?", [title, is_completion_page, pageId]);
-        
-        // Delete and re-insert components
         await connection.query("DELETE FROM course_components WHERE page_id = ?", [pageId]);
         if (components.length > 0) {
             const insertQuery = "INSERT INTO course_components (page_id, component_type, order_index, props) VALUES ?";
             const values = components.map((component, index) => [pageId, component.component_type, index, JSON.stringify(component.props)]);
             await connection.query(insertQuery, [values]);
         }
-        
+
         await connection.commit();
         res.status(200).json({ message: "Page saved successfully!" });
     } catch (error) {
@@ -641,7 +637,7 @@ app.get("/api/admin/meetups/:meetupIdString", async (req, res) => {
         if (meetupRows.length === 0) return res.status(404).json({ message: "Meetup not found." });
         const meetup = meetupRows[0];
         const [speakers] = await db.query("SELECT * FROM meetup_speakers WHERE meetup_id = ?", [meetup.id]);
-        res.status(200).json({ ...meetup, speakers});
+        res.status(200).json({ ...meetup, speakers });
     } catch (error) {
         res.status(500).json({ message: "Failed to fetch meetup details." });
     }
@@ -749,18 +745,12 @@ app.delete("/api/admin/teacher-guide/:id", async (req, res) => {
     }
 });
 
-
-
-
-// === NEW ENDPOINT to update a user's role (protected by isAdmin middleware) ===
 app.put("/api/admin/users/:id/role", verifyToken, isSuperAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { role } = req.body;
 
         if (!role) return res.status(400).json({ message: "Role is required." });
-
-        // Prevent a superadmin from demoting themselves
         if (id == req.body.adminUserId && role !== 'superadmin') {
             return res.status(403).json({ message: "Cannot remove your own super admin privileges." });
         }
@@ -774,18 +764,14 @@ app.put("/api/admin/users/:id/role", verifyToken, isSuperAdmin, async (req, res)
 });
 
 
-app.delete("/api/admin/users/:id",verifyToken, isAdminOrSuperAdmin, async (req, res) => {
+app.delete("/api/admin/users/:id", verifyToken, isAdminOrSuperAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const adminRole = req.userRole; // Get the admin's role from the middleware
-
-        // Get the role of the user to be deleted
+        const adminRole = req.userRole;
         const [targetUserRows] = await db.query("SELECT role FROM users WHERE id = ?", [id]);
         if (targetUserRows.length === 0) return res.status(404).json({ message: "Հաշիվը չգտնվեց։" });
-        
-        const targetUserRole = targetUserRows[0].role;
 
-        // Enforce security rules
+        const targetUserRole = targetUserRows[0].role;
         if (targetUserRole === 'superadmin') {
             return res.status(403).json({ message: "Super admins cannot be deleted." });
         }
@@ -800,7 +786,16 @@ app.delete("/api/admin/users/:id",verifyToken, isAdminOrSuperAdmin, async (req, 
     }
 });
 
-
+// ===================================================================
+// === EMAIL SENDING SETUP ===========================================
+// ===================================================================
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_APP_PASSWORD
+    }
+});
 
 
 // --- Start Server ---

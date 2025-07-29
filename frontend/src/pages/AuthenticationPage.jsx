@@ -227,7 +227,7 @@ const RegisterForm = () => {
 
     try {
       await axios.post(`${API_URL}/register`, submissionData);
-      setSuccess("Գրանցումը հաջողվեց։ Խնդրում ենք մուտք գործել։");
+        setSuccess("Գրանցումը հաջողվեց։ Խնդրում ենք ստուգել ձեր էլ. փոստը՝ հաշիվը հաստատելու համար։");
         setFormData({ name: "", email: "", password: "", phone: "", gender: "male", school_name: "", role: "student", grade: "2" });
         setPrivacyAccepted(false); // Reset checkbox
     } catch (err) {
@@ -293,7 +293,7 @@ const RegisterForm = () => {
             id="privacy"
             checked={privacyAccepted}
             onChange={(e) => setPrivacyAccepted(e.target.checked)}
-            className="h-4 w-4 rounded"
+            className="h-8 w-8 rounded"
             required
         />
         <label htmlFor="privacy" className="text-sm text-gray-600">
@@ -305,7 +305,7 @@ const RegisterForm = () => {
                 className="text-green-600 hover:underline"
             >
                 Գաղտնիության քաղաքականությանը
-            </a>.
+            </a>:
         </label>
       </div>
       <button

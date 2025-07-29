@@ -15,11 +15,11 @@ import AdminLayout from "./layouts/AdminLayout.jsx";
 import UserLayout from "./layouts/UserLayout.jsx";
 
 // Pages
-import LandingPage from "./pages/LandingPage.jsx"; // Import the new landing page
+import LandingPage from "./pages/LandingPage.jsx"; 
 import AuthenticationPage from "./pages/AuthenticationPage";
 import LearnPage from "./pages/LearnPage";
 import CoursePage from "./pages/CoursePage";
-import AskSparkyPage from "./pages/AskSparkyPage.jsx"; // Renamed import
+import AskSparkyPage from "./pages/AskSparkyPage.jsx"; 
 import ProfilePage from "./pages/ProfilePage";
 import MeetupsListPage from "./pages/MeetupsListPage";
 import MeetupDetailPage from "./pages/MeetupDetailPage";
@@ -30,6 +30,7 @@ import AdminCourseEditorPage from "./pages/AdminCourseEditorPage";
 import AdminMeetupsListPage from "./pages/AdminMeetupsListPage";
 import AdminMeetupEditorPage from "./pages/AdminMeetupEditorPage";
 import AdminTeacherGuidePage from "./pages/AdminTeacherGuidePage";
+import VerifyEmailPage from "./pages/VerifyEmailPage.jsx"; 
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useContext(AuthContext);
@@ -55,11 +56,9 @@ function App() {
       <Router>
         <div className="bg-gray-50 min-h-screen text-gray-800">
           <Routes>
-            {/* === NEW: Publicly accessible landing page at the root === */}
             <Route path="/" element={<LandingPage />} />
             <Route path="/authentication" element={<AuthenticationPage />} />
-            
-            {/* User Routes are now nested and protected */}
+            <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route element={<ProtectedRoute><UserLayout /></ProtectedRoute>}>
               <Route path="/learn" element={<LearnPage />} />
               <Route path="/learn/course/:courseIdString" element={<CoursePage />} />
@@ -69,8 +68,10 @@ function App() {
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/teacher-guide" element={<TeacherGuidePage />} />
             </Route>
-
-            {/* Admin Routes */}
+            
+            
+            
+            {/* Admin */}
             <Route 
               path="/admin" 
               element={

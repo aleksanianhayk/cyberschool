@@ -10,6 +10,7 @@ const ProfilePage = () => {
     const { user, updateUser, logout } = useContext(AuthContext);
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [is2faModalOpen, setIs2faModalOpen] = useState(false);
+    const [notification, setNotification] = useState(null);
 
     if (!user) {
         return <div className="p-10">Օգտատերը չի գտնվել։</div>;
@@ -31,14 +32,34 @@ const ProfilePage = () => {
         }
     };
 
+
     const on2faEnabled = () => {
         updateUser({ is_two_factor_enabled: 1 });
         setIs2faModalOpen(false);
     };
 
+    const handleResendVerification = async () => {
+        try {
+            const token = localStorage.getItem('cyberstorm_token');
+            await axios.post(`${API_URL}/resend-verification`, { userId: user.id }, { headers: { Authorization: `Bearer ${token}` } });
+
+            setNotification({ type: 'success', message: 'Հաստատման նամակն ուղարկված է։' });
+        } catch (error) {
+            setNotification({ type: 'error', message: 'Նամակն ուղարկել չհաջողվեց։' });
+        }
+    };
+
     return (
         <div className="max-w-4xl mx-auto p-6 md:p-10">
             <h1 className="text-3xl font-bold text-gray-800 mb-8">Իմ էջը</h1>
+            
+            {!user.is_email_verified && (
+                <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert">
+                    <p className="font-bold">Ձեր էլ. փոստը հաստատված չէ։</p>
+                    <p>Խնդրում ենք ստուգել ձեր էլ. փոստը՝ հաստատման հղումը գտնելու համար։</p>
+                    <button onClick={handleResendVerification} className="mt-2 font-semibold underline">Ուղարկել նորից</button>
+                </div>
+            )}
 
             <div className="bg-white p-8 rounded-xl shadow-md space-y-6">
                 <div>
@@ -77,6 +98,8 @@ const ProfilePage = () => {
 
             {isPasswordModalOpen && <ChangePasswordModal user={user} onClose={() => setIsPasswordModalOpen(false)} />}
             {is2faModalOpen && <TwoFactorAuthModal user={user} onClose={() => setIs2faModalOpen(false)} onEnabled={on2faEnabled} />}
+            {notification && <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification(null)} />}
+
         </div>
     );
 };
