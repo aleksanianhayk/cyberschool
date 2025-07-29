@@ -156,8 +156,9 @@ const CoursePage = () => {
             <header className="w-full bg-white shadow-md sticky top-0 z-10 p-4">
                 <div className="max-w-5xl mx-auto">
                     <div className="flex justify-between items-center">
-                         <Link to="/learn" className="text-sm px-3 py-1 bg-green-300 text-white rounded hover:bg-gray-400">←</Link>
-                         <h2 className="md:text-xl md:font-bold text-center font-normal text-base w-full">{course.title}</h2>
+                         <Link to="/learn" className="w-[40px] text-center text-sm py-1 bg-green-300 text-white rounded hover:bg-gray-400">←</Link>
+                        <h2 className="md:text-xl md:font-bold text-center font-normal text-base w-full">{course.title}</h2>
+                        <div className="w-[40px]"></div>
                     </div>
                     <div className="flex items-center gap-4 mt-4">
                         <button onClick={goToPrev} className="px-4 py-2 bg-gray-200 rounded">Նախորդ</button>
