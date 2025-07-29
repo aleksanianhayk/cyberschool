@@ -46,7 +46,7 @@ const CourseCompletion = ({ courseTitle }) => {
             to="/learn"
             className="px-8 py-3 bg-lime-600 text-white font-bold rounded-lg text-lg shadow-lg hover:bg-lime-700 transition-transform transform hover:scale-105"
           >
-            Վերադառնալ բոլոր դասընթացներին
+            Շարունակել սովորել
           </Link>
         </div>
       </div>

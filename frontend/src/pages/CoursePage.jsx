@@ -156,9 +156,9 @@ const CoursePage = () => {
             <header className="w-full bg-white shadow-md sticky top-0 z-10 p-4">
                 <div className="max-w-5xl mx-auto">
                     <div className="flex justify-between items-center">
-                         <Link to="/learn" className="text-sm text-green-600 hover:underline">← Վերադառնալ</Link>
-                         <h2 className="text-xl font-bold text-center">{course.title}</h2>
-                         <div className="w-1/4"></div>
+                         <Link to="/learn" className="text-sm text-green-600 hover:underline md:hidden">← Վերադառնալ</Link>
+                         <h2 className="text-xl font-bold text-center md:font-normal md:text-base">{course.title}</h2>
+                         <div className="w-[10%]"></div>
                     </div>
                     <div className="flex items-center gap-4 mt-4">
                         <button onClick={goToPrev} className="px-4 py-2 bg-gray-200 rounded">Նախորդ</button>
