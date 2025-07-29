@@ -1,16 +1,46 @@
 // /frontend/src/pages/ProfilePage.jsx
 
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext.jsx';
 
 const API_URL = `${import.meta.env.VITE_API_URL}/api/users`;
+
+// --- Reusable Modals ---
+const ConfirmationModal = ({ message, onConfirm, onCancel }) => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="bg-white p-6 rounded-lg shadow-2xl w-full max-w-sm text-center">
+            <p className="text-gray-800 text-lg mb-6">{message}</p>
+            <div className="flex justify-center gap-4">
+                <button onClick={onCancel} className="px-6 py-2 bg-gray-200 rounded-md hover:bg-gray-300">Չեղարկել</button>
+                <button onClick={onConfirm} className="px-6 py-2 bg-red-600 text-white font-semibold rounded-md hover:bg-red-700">Հաստատել</button>
+            </div>
+        </div>
+    </div>
+);
+
+const ToastNotification = ({ message, type, onDismiss }) => {
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            onDismiss();
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [onDismiss]);
+
+    return (
+        <div className={`fixed bottom-5 right-5 p-4 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`}>
+            {message}
+        </div>
+    );
+};
+
 
 const ProfilePage = () => {
     const { user, updateUser, logout } = useContext(AuthContext);
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
     const [is2faModalOpen, setIs2faModalOpen] = useState(false);
     const [notification, setNotification] = useState(null);
+    const [confirmDisable2FA, setConfirmDisable2FA] = useState(false);
 
     if (!user) {
         return <div className="p-10">Օգտատերը չի գտնվել։</div>;
@@ -18,20 +48,24 @@ const ProfilePage = () => {
 
     const handle2faStatusChange = async () => {
         if (user.is_two_factor_enabled) {
-            if (window.confirm('Վստա՞հ եք, որ ուզում եք անջատել 2FA-ն։')) {
-                try {
-                    const token = localStorage.getItem('cyberstorm_token');
-                    await axios.post(`${API_URL}/2fa/disable`, { userId: user.id }, { headers: { Authorization: `Bearer ${token}` } });
-                    updateUser({ is_two_factor_enabled: 0 });
-                } catch (error) {
-                    console.error('Failed to disable 2FA', error);
-                }
-            }
+            setConfirmDisable2FA(true); // Open confirmation modal
         } else {
             setIs2faModalOpen(true);
         }
     };
 
+    const confirmAndDisable2FA = async () => {
+        try {
+            const token = localStorage.getItem('cyberstorm_token');
+            await axios.post(`${API_URL}/2fa/disable`, {}, { headers: { Authorization: `Bearer ${token}` } });
+            updateUser({ is_two_factor_enabled: 0, two_factor_secret: null });
+            setNotification({ type: 'success', message: '2FA-ն հաջողությամբ անջատվեց։' });
+        } catch (error) {
+            setNotification({ type: 'error', message: '2FA-ն անջատել չհաջողվեց։' });
+        } finally {
+            setConfirmDisable2FA(false);
+        }
+    };
 
     const on2faEnabled = () => {
         updateUser({ is_two_factor_enabled: 1 });
@@ -41,8 +75,7 @@ const ProfilePage = () => {
     const handleResendVerification = async () => {
         try {
             const token = localStorage.getItem('cyberstorm_token');
-            await axios.post(`${API_URL}/resend-verification`, { userId: user.id }, { headers: { Authorization: `Bearer ${token}` } });
-
+            await axios.post(`${API_URL}/resend-verification`, {}, { headers: { Authorization: `Bearer ${token}` } });
             setNotification({ type: 'success', message: 'Հաստատման նամակն ուղարկված է։' });
         } catch (error) {
             setNotification({ type: 'error', message: 'Նամակն ուղարկել չհաջողվեց։' });
@@ -98,8 +131,14 @@ const ProfilePage = () => {
 
             {isPasswordModalOpen && <ChangePasswordModal user={user} onClose={() => setIsPasswordModalOpen(false)} />}
             {is2faModalOpen && <TwoFactorAuthModal user={user} onClose={() => setIs2faModalOpen(false)} onEnabled={on2faEnabled} />}
-            {notification && <Notification message={notification.message} type={notification.type} onDismiss={() => setNotification(null)} />}
-
+            {notification && <ToastNotification message={notification.message} type={notification.type} onDismiss={() => setNotification(null)} />}
+            {confirmDisable2FA && (
+                <ConfirmationModal 
+                    message="Վստա՞հ եք, որ ուզում եք անջատել 2FA-ն։"
+                    onConfirm={confirmAndDisable2FA}
+                    onCancel={() => setConfirmDisable2FA(false)}
+                />
+            )}
         </div>
     );
 };
