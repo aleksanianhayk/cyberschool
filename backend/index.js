@@ -797,6 +797,50 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+app.post("/api/users/resend-verification", verifyToken, async (req, res) => {
+    const connection = await db.getConnection();
+    try {
+        await connection.beginTransaction();
+        const userId = req.user.id;
+
+        const [userRows] = await connection.query("SELECT email FROM users WHERE id = ?", [userId]);
+        if (userRows.length === 0) {
+            return res.status(404).json({ message: "User not found." });
+        }
+        const userEmail = userRows[0].email;
+        
+        await connection.query("DELETE FROM email_verifications WHERE user_id = ?", [userId]);
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 3600000);
+        await connection.query(
+            "INSERT INTO email_verifications (user_id, token, expires_at) VALUES (?, ?, ?)",
+            [userId, token, expires]
+        );
+
+        const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+        
+        const mailOptions = {
+            from: '"CyberStorm" <cyberschool.space@gmail.com>',
+            to: userEmail,
+            subject: 'Verify Your Email Address',
+            html: `<h1>Welcome to CyberStorm!</h1><p>Please click the link below to verify your email address:</p><a href="${verificationUrl}">${verificationUrl}</a>`
+        };
+
+        await transporter.sendMail(mailOptions);
+        
+        await connection.commit();
+        res.status(200).json({ message: "Verification email sent successfully." });
+    } catch (error) {
+        await connection.rollback();
+        console.error("Resend verification error:", error);
+        res.status(500).json({ message: "Internal server error." });
+    } finally {
+        connection.release();
+    }
+});
+
+
 
 // --- Start Server ---
 const PORT = process.env.PORT || 3001;
