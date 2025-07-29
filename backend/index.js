@@ -841,6 +841,27 @@ app.post("/api/users/resend-verification", verifyToken, async (req, res) => {
 });
 
 
+app.get("/api/verify-email", async (req, res) => {
+    try {
+        const { token } = req.query;
+        const [verificationRows] = await db.query("SELECT * FROM email_verifications WHERE token = ? AND expires_at > NOW()", [token]);
+
+        if (verificationRows.length === 0) {
+            return res.status(400).send("Invalid or expired verification token.");
+        }
+
+        const verification = verificationRows[0];
+        await db.query("UPDATE users SET is_email_verified = TRUE WHERE id = ?", [verification.user_id]);
+        await db.query("DELETE FROM email_verifications WHERE id = ?", [verification.id]);
+
+        res.send("<h1>Email verified successfully! You can now log in.</h1>");
+    } catch (error) {
+        res.status(500).send("<h1>Internal server error during verification.</h1>");
+    }
+});
+
+
+
 
 // --- Start Server ---
 const PORT = process.env.PORT || 3001;
