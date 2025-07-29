@@ -158,7 +158,6 @@ const CoursePage = () => {
                     <div className="flex justify-between items-center">
                          <Link to="/learn" className="text-sm px-3 py-1 bg-green-300 text-white rounded hover:bg-gray-400">←</Link>
                          <h2 className="md:text-xl md:font-bold text-center font-normal text-base">{course.title}</h2>
-                         <div className="w-[10%]"></div>
                     </div>
                     <div className="flex items-center gap-4 mt-4">
                         <button onClick={goToPrev} className="px-4 py-2 bg-gray-200 rounded">Նախորդ</button>
