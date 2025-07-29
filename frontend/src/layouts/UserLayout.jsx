@@ -31,12 +31,12 @@ const UserLayout = () => {
         <div className="flex h-screen bg-gray-100">
             {/* Mobile Menu Overlay */}
             <div 
-                className={`fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                className={`fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
                 onClick={() => setIsSidebarOpen(false)}
             ></div>
 
             {/* Sidebar */}
-            <aside className={`fixed top-0 left-0 h-full z-40 flex flex-col bg-white shadow-xl transition-all duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'w-64' : '-translate-x-full md:w-20'}`}>
+            <aside className={`fixed top-0 left-0 h-full z-50 flex flex-col bg-white shadow-xl transition-all duration-300 ease-in-out md:relative md:translate-x-0 ${isSidebarOpen ? 'w-64' : '-translate-x-full md:w-20'}`}>
                 <div className="flex items-center justify-between p-4 border-b h-16">
                     <h1 className={`text-xl font-bold text-green-600 whitespace-nowrap transition-opacity ${isSidebarOpen ? 'visible' : 'md:hidden'}`}>CyberSchool</h1>
                     {/* This button is only visible on desktop and controls folding */}
