@@ -30,6 +30,10 @@ const UserLayout = () => {
 
     return (
         <div className="flex h-screen bg-gray-100">
+            <div 
+                className={`fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden transition-opacity ${isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                onClick={() => setIsSidebarOpen(false)}
+            ></div>
             <aside className={`relative z-30 flex flex-col bg-white shadow-xl transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
                 <div className="flex items-center justify-between p-4 border-b h-16">
                     <h1 className={`text-xl font-bold text-green-600 whitespace-nowrap ${isSidebarOpen ? '' : 'hidden'}`}>CyberSchool</h1>
@@ -56,8 +60,17 @@ const UserLayout = () => {
                 </div>
             </aside>
 
-            <main className="flex-1 overflow-y-auto">
-                <Outlet />
+            <main className="flex-1 flex flex-col overflow-y-auto">
+                {/* Top bar for mobile view with hamburger menu */}
+                <div className="md:hidden flex justify-between items-center bg-white p-4 shadow-md">
+                    <h1 className="text-xl font-bold text-green-600">CyberSchool</h1>
+                    <button onClick={() => setIsSidebarOpen(true)}>
+                        <MenuIcon />
+                    </button>
+                </div>
+                <div className="flex-grow">
+                    <Outlet />
+                </div>
             </main>
         </div>
     );
