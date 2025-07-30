@@ -302,9 +302,9 @@ const LandingPage = () => {
 
         <section id="features" className="py-20 bg-brand-light-green">
           <div className="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
-            <div className="feature-image fade-in-section m-auto">
+            <div className="feature-image fade-in-section">
               {/* Corrected image path for Vite */}
-              <img src="/dragon4.png" class="w-full max-w-[400px]" alt="Interactive course screenshot" />
+              <img src="/dragon4.png" alt="Interactive course screenshot" />
             </div>
             <div className="feature-text fade-in-section">
               <h2 className="text-2xl md:text-3xl font-bold mb-6">
@@ -363,7 +363,7 @@ const LandingPage = () => {
 
         <section className="py-20 bg-white fade-in-section">
           <div className="container mx-auto max-w-4xl">
-            <div className="flex flex-col md:flex-row items-center gap-8 p-5">
+            <div className="flex flex-col md:flex-row items-center gap-8 px-5">
               <div className="sm:w-1/3 flex-shrink-0">
                 {/* Corrected image path for Vite */}
                 <img
