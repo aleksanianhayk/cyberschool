@@ -23,7 +23,7 @@ const VerifyEmailPage = () => {
             try {
                 const res = await axios.get(`${API_URL}/verify-email?token=${token}`);
                 setStatus('success');
-                setMessage(res.data.message || 'Ձեր էլ. փոստը հաջողությամբ հաստատվեց։');
+                setMessage(res.data.message || 'Ձեր էլ. փոստը հաջողությամբ հաստատվեց։ Այժմ կարող եք մուտք գործել։');
             } catch (error) {
                 setStatus('error');
                 setMessage(error.response?.data?.message || 'Էլ. փոստի հաստատումը ձախողվեց։');
@@ -37,8 +37,20 @@ const VerifyEmailPage = () => {
         <div className="flex items-center justify-center min-h-screen bg-gray-100">
             <div className="bg-white p-8 rounded-xl shadow-lg text-center max-w-md">
                 {status === 'verifying' && <div className="loader mx-auto mb-4"></div>}
-                {status === 'success' && <div className="text-green-500 mb-4">✅</div>}
-                {status === 'error' && <div className="text-red-500 mb-4">❌</div>}
+                {status === 'success' && (
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                )}
+                {status === 'error' && (
+                     <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-10 h-10 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </div>
+                )}
                 
                 <h1 className={`text-2xl font-bold mb-4 ${status === 'success' ? 'text-green-600' : (status === 'error' ? 'text-red-600' : 'text-gray-800')}`}>
                     {status === 'success' ? 'Հաստատված է' : (status === 'error' ? 'Սխալ' : 'Հաստատում')}
