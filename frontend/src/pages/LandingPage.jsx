@@ -363,8 +363,8 @@ const LandingPage = () => {
 
         <section className="py-20 bg-white fade-in-section">
           <div className="container mx-auto max-w-4xl">
-            <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="md:w-1/3 flex-shrink-0">
+            <div className="flex flex-col md:flex-row items-center gap-8 p-5">
+              <div className="sm:w-1/3 flex-shrink-0">
                 {/* Corrected image path for Vite */}
                 <img
                   src="/dragon2.png"
