@@ -48,7 +48,7 @@ const ProfilePage = () => {
 
     const handle2faStatusChange = async () => {
         if (user.is_two_factor_enabled) {
-            setConfirmDisable2FA(true); // Open confirmation modal
+            setConfirmDisable2FA(true);
         } else {
             setIs2faModalOpen(true);
         }
@@ -86,7 +86,11 @@ const ProfilePage = () => {
         <div className="max-w-4xl mx-auto p-6 md:p-10">
             <h1 className="text-3xl font-bold text-gray-800 mb-8">Իմ էջը</h1>
             
-            {!user.is_email_verified && (
+            {user.is_email_verified ? (
+                 <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
+                    <p className="font-bold">Ձեր էլ. փոստը հաջողությամբ հաստատված է։</p>
+                </div>
+            ) : (
                 <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert">
                     <p className="font-bold">Ձեր էլ. փոստը հաստատված չէ։</p>
                     <p>Խնդրում ենք ստուգել ձեր էլ. փոստը՝ հաստատման հղումը գտնելու համար։</p>
