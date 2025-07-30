@@ -110,7 +110,7 @@ app.post("/api/login", async (req, res) => {
         if (user.is_two_factor_enabled) {
             return res.status(200).json({ twoFactorRequired: true, userId: user.id });
         }
-        const payload = {
+        const payload = { 
             id: user.id,
             name: user.name,
             role: user.role,
@@ -118,7 +118,8 @@ app.post("/api/login", async (req, res) => {
             phone: user.phone,
             school_name: user.school_name,
             grade: user.grade,
-            is_two_factor_enabled: !!user.is_two_factor_enabled
+            is_two_factor_enabled: !!user.is_two_factor_enabled,
+            is_email_verified: !!user.is_email_verified
         };
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '3h' });
         res.status(200).json({ message: "Login successful!", token });
@@ -137,16 +138,17 @@ app.post("/api/login/2fa/verify", async (req, res) => {
         const user = userRows[0];
         const verified = speakeasy.totp.verify({ secret: user.two_factor_secret, encoding: 'base32', token });
         if (verified) {
-            const payload = {
-                id: user.id,
-                name: user.name,
-                role: user.role,
-                email: user.email,
-                phone: user.phone,
-                school_name: user.school_name,
-                grade: user.grade,
-                is_two_factor_enabled: !!user.is_two_factor_enabled
-            };
+            const payload = { 
+            id: user.id,
+            name: user.name,
+            role: user.role,
+            email: user.email,
+            phone: user.phone,
+            school_name: user.school_name,
+            grade: user.grade,
+            is_two_factor_enabled: !!user.is_two_factor_enabled,
+            is_email_verified: !!user.is_email_verified
+        };
             const jwtToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '3h' });
             res.status(200).json({ message: "Login successful!", token: jwtToken });
         } else {

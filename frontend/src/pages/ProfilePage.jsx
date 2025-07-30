@@ -88,7 +88,7 @@ const ProfilePage = () => {
             
             {user.is_email_verified ? (
                  <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6" role="alert">
-                    <p className="font-bold">Ձեր էլ. փոստը հաջողությամբ հաստատված է։</p>
+                    <p className="font-bold">Ձեր էլ. փոստը հաստատված է։</p>
                 </div>
             ) : (
                 <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert">
