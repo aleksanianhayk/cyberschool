@@ -372,7 +372,7 @@ const LandingPage = () => {
                   className="w-full max-w-[250px] mx-auto"
                 />
               </div>
-              <div className="md:w-2/3">
+              <div className="md:w-2/3 sm:w-[90%]">
                 <h3 className="text-3xl md:text-4xl font-bold mb-4">
                   Խորհուրդ Սպարկիից
                 </h3>
