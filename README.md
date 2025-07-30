@@ -26,6 +26,7 @@ The repository is organized into two main folders:
 cyberschool/
 ├── frontend/       # Contains the complete React Vite application
 └── backend/        # Contains the Node.js Express server and all related API logic
+   └── node_modules # Contains all the external dependencies and packages required for the application to function. (Express.js, GoogleAI, MySql, Encription etc.) 
 ```
 
 ---
