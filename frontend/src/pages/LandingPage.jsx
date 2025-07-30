@@ -243,7 +243,7 @@ const LandingPage = () => {
         <section id="audience" className="py-20">
           <div className="container mx-auto px-6">
             <div className="text-center mb-16 fade-in-section">
-              <h2 className="text-3xl md:text-4xl font-bold">
+              <h2 className="text-2xl md:text-4xl font-bold">
                 Ստեղծված է կրթական համայնքի համար
               </h2>
               <p className="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
@@ -307,7 +307,7 @@ const LandingPage = () => {
               <img src="/dragon4.png" alt="Interactive course screenshot" />
             </div>
             <div className="feature-text fade-in-section">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              <h2 className="text-2xl md:text-3xl font-bold mb-6">
                 Ժամանակակից ուսուցման հզոր հնարավորություններ
               </h2>
               <p className="text-lg text-gray-600 mb-8">
@@ -352,7 +352,7 @@ const LandingPage = () => {
                   </span>{" "}
                   <span>
                     <strong className="font-semibold">AI Օգնական։</strong>{" "}
-                    Gemini API-ի վրա հիմնված մեր AI-ն տալիս է անհատականացված
+                    Gemini-ի վրա հիմնված մեր AI-ն տալիս է անհատականացված
                     պատասխաններ։
                   </span>
                 </li>
@@ -372,7 +372,7 @@ const LandingPage = () => {
                   className="w-full max-w-[250px] mx-auto"
                 />
               </div>
-              <div className="md:w-2/3 sm:w-[90%] xs:w-[90%]">
+              <div className="w-[90%] sm:w-2/3">
                 <h3 className="text-3xl md:text-4xl font-bold mb-4">
                   Խորհուրդ Սպարկիից
                 </h3>
