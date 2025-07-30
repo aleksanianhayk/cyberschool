@@ -100,7 +100,7 @@ app.post("/api/register", async (req, res) => {
 
         await connection.query("INSERT INTO email_verifications (user_id, token, expires_at) VALUES (?, ?, ?)", [newUserId, token, expires]);
 
-        const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+        const verificationUrl = `https://www.cyberschool.space/verify-email?token=${token}`;
         
         const mailOptions = {
             from: `"CyberSchool" <${process.env.EMAIL_USER}>`,
