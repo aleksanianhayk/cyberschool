@@ -83,17 +83,63 @@ const isAdminOrSuperAdmin = (req, res, next) => {
 // ===================================================================
 
 app.post("/api/register", async (req, res) => {
+    const connection = await db.getConnection();
     try {
+        await connection.beginTransaction();
         const { name, email, password, phone, gender, school_name, role, grade } = req.body;
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-        const query = "INSERT INTO users (name, email, password, phone, gender, school_name, role, grade) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        const values = [name, email, hashedPassword, phone, gender, school_name, role, grade];
-        await db.query(query, values);
-        res.status(201).json({ message: "User registered successfully!" });
+        
+        const userQuery = "INSERT INTO users (name, email, password, phone, gender, school_name, role, grade) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        const userValues = [name, email, hashedPassword, phone, gender, school_name, role, grade];
+        const [result] = await connection.query(userQuery, userValues);
+        const newUserId = result.insertId;
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const expires = new Date(Date.now() + 3600000); // 1 hour
+
+        await connection.query("INSERT INTO email_verifications (user_id, token, expires_at) VALUES (?, ?, ?)", [newUserId, token, expires]);
+
+        const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+        
+        const mailOptions = {
+            from: `"CyberSchool" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: 'Verify Your Email Address for CyberSchool',
+            html: `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 12px; overflow: hidden;">
+                    <div style="background-color: #78C841; color: white; padding: 20px; text-align: center;">
+                        <h1 style="margin: 0; font-size: 24px;">Բարի գալուստ CyberSchool</h1>
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="font-size: 20px; color: #1f2937;">Հաստատեք ձեր էլ. փոստի հասցեն</h2>
+                        <p>Հարգելի ${name},</p>
+                        <p>Շնորհակալություն CyberSchool-ում գրանցվելու համար։ Ձեր հաշիվն ակտիվացնելու և մեր ուսումնական հարթակ մուտք գործելու համար մնացել է ընդամենը մեկ քայլ։</p>
+                        <p>Խնդրում ենք սեղմել ստորև բերված կոճակը՝ ձեր էլ. փոստի հասցեն հաստատելու համար։</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${verificationUrl}" style="background-color: #FF9B2F; color: white; padding: 15px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Հաստատել էլ. փոստը</a>
+                        </div>
+                        <p>Եթե դուք չեք գրանցվել այս հաշվի համար, խնդրում ենք անտեսել այս նամակը։</p>
+                        <p>Շնորհակալություն,<br>CyberSchool-ի թիմ</p>
+                    </div>
+                    <div style="background-color: #f7f7f7; padding: 20px; text-align: center; font-size: 12px; color: #777;">
+                        <p>&copy; ${new Date().getFullYear()} CyberSchool. Բոլոր իրավունքները պաշտպանված են։</p>
+                    </div>
+                </div>
+            `
+        };
+
+
+        const info = await transporter.sendMail(mailOptions);
+        
+        await connection.commit();
+        res.status(201).json({ message: "Registration successful! Please check your email to verify your account." });
     } catch (error) {
+        await connection.rollback();
         if (error.code === 'ER_DUP_ENTRY') return res.status(409).json({ message: "Email or phone already exists." });
         res.status(500).json({ message: "Internal server error." });
+    } finally {
+        connection.release();
     }
 });
 
@@ -178,7 +224,7 @@ app.post("/api/users/change-password", verifyToken, async (req, res) => {
 
 app.post("/api/users/2fa/generate", verifyToken, async (req, res) => {
     try {
-        const secret = speakeasy.generateSecret({ name: `CyberStorm (${req.user.name})` });
+        const secret = speakeasy.generateSecret({ name: `CyberSchool - (${req.user.name})` });
         await db.query("UPDATE users SET two_factor_secret = ? WHERE id = ?", [secret.base32, req.user.id]);
         const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
         res.json({ secret: secret.base32, qrCodeUrl });
@@ -823,10 +869,30 @@ app.post("/api/users/resend-verification", verifyToken, async (req, res) => {
         const verificationUrl = `https://www.cyberschool.space/verify-email?token=${token}`;
         
         const mailOptions = {
-            from: '"CyberSchool" <cyberschool.space@gmail.com>',
-            to: userEmail,
-            subject: 'Verify Your Email Address',
-            html: `<h1>Welcome to CyberSchool!</h1><p>Please click the link below to verify your email address:</p><a href="${verificationUrl}">${verificationUrl}</a>`
+            from: `"CyberSchool" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: 'Verify Your Email Address for CyberSchool',
+            html: `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 12px; overflow: hidden;">
+                    <div style="background-color: #78C841; color: white; padding: 20px; text-align: center;">
+                        <h1 style="margin: 0; font-size: 24px;">Բարի գալուստ CyberSchool</h1>
+                    </div>
+                    <div style="padding: 30px;">
+                        <h2 style="font-size: 20px; color: #1f2937;">Հաստատեք ձեր էլ. փոստի հասցեն</h2>
+                        <p>Հարգելի ${name},</p>
+                        <p>Շնորհակալություն CyberSchool-ում գրանցվելու համար։ Ձեր հաշիվն ակտիվացնելու և մեր ուսումնական հարթակ մուտք գործելու համար մնացել է ընդամենը մեկ քայլ։</p>
+                        <p>Խնդրում ենք սեղմել ստորև բերված կոճակը՝ ձեր էլ. փոստի հասցեն հաստատելու համար։</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${verificationUrl}" style="background-color: #FF9B2F; color: white; padding: 15px 25px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">Հաստատել էլ. փոստը</a>
+                        </div>
+                        <p>Եթե դուք չեք գրանցվել այս հաշվի համար, խնդրում ենք անտեսել այս նամակը։</p>
+                        <p>Շնորհակալություն,<br>CyberSchool-ի թիմ</p>
+                    </div>
+                    <div style="background-color: #f7f7f7; padding: 20px; text-align: center; font-size: 12px; color: #777;">
+                        <p>&copy; ${new Date().getFullYear()} CyberSchool. Բոլոր իրավունքները պաշտպանված են։</p>
+                    </div>
+                </div>
+            `
         };
 
         await transporter.sendMail(mailOptions);
