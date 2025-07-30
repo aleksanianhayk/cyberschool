@@ -304,7 +304,7 @@ const LandingPage = () => {
           <div className="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
             <div className="feature-image fade-in-section">
               {/* Corrected image path for Vite */}
-              <img src="/dragon4.png" alt="Interactive course screenshot" />
+              <img src="/dragon4.png" class="max-w-[400px]" alt="Interactive course screenshot" />
             </div>
             <div className="feature-text fade-in-section">
               <h2 className="text-2xl md:text-3xl font-bold mb-6">
